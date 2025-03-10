@@ -1,0 +1,17 @@
+[package]
+name = "foxtive-ntex-multipart"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Library For Handling File Uploads Based on Ntex"
+repository = "https://github.com/foxtive/foxtive-ntex"
+authors = ["ahmard"]
+
+[dependencies]
+futures = "0.3"
+ntex-multipart = "2.0"
+tokio = { version = "1.44", default-features = false, features = ["fs", "io-util"] }
+ntex = { version = "2.11", default-features = false, features = ["tokio"] }
+
+[dev-dependencies]
+tokio = { version = "1.44", features = ["full"] }
