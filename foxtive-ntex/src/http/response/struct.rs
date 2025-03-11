@@ -2,9 +2,9 @@ use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
 use crate::helpers::responder::Responder;
 use crate::http::response::defs::StructResponse;
+use crate::http::HttpResult;
 use ntex::web::HttpResponse;
 use serde::Serialize;
-use crate::http::HttpResult;
 
 impl<T: Serialize> StructResponse for T {
     fn into_response(self) -> HttpResponse {

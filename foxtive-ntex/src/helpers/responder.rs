@@ -1,47 +1,12 @@
-use std::fmt::{Display, Formatter};
-
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
-use foxtive::helpers::json::json_empty;
 use crate::helpers::json_message::JsonMessage;
+use foxtive::helpers::json::json_empty;
 use ntex::http::{Response, StatusCode};
 use ntex::web::HttpResponse;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 pub struct Responder;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct JsonResponse<T: Serialize> {
-    pub code: String,
-    pub success: bool,
-    pub timestamp: u64,
-    pub message: Option<String>,
-    pub data: T,
-}
-
-#[derive(Debug, Serialize)]
-pub struct SeJsonResponse<T> {
-    pub code: String,
-    pub success: bool,
-    pub timestamp: u64,
-    pub message: Option<String>,
-    pub data: T,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct DeJsonResponse<T> {
-    pub code: String,
-    pub success: bool,
-    pub timestamp: u64,
-    pub message: Option<String>,
-    pub data: T,
-}
-
-impl<T: Serialize> Display for JsonResponse<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(serde_json::to_string(self).unwrap().as_str())
-    }
-}
 
 impl Responder {
     pub fn send_msg<C, D>(data: D, code: C, msg: &str) -> Response

@@ -1,6 +1,6 @@
+use foxtive::helpers::json::JsonResponse;
 use serde::Serialize;
 
-use crate::helpers::responder::JsonResponse;
 use foxtive::helpers::time::current_timestamp;
 
 pub struct JsonMessage;

@@ -1,9 +1,9 @@
-#[allow(unused_imports)]
-use std::sync::{Arc, OnceLock};
-use foxtive::{FoxtiveState, FOXTIVE};
-use foxtive::prelude::OnceLockHelper;
 use crate::setup::state::FoxtiveNtexState;
 use crate::FOXTIVE_WEB;
+use foxtive::prelude::OnceLockHelper;
+use foxtive::{FoxtiveState, FOXTIVE};
+#[allow(unused_imports)]
+use std::sync::{Arc, OnceLock};
 
 pub trait WebOnceLockHelper {
     fn app(&self) -> &FoxtiveNtexState {
