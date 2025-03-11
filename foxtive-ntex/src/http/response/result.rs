@@ -25,7 +25,7 @@ impl ResultResponseExt for Result<AppMessage, AppMessage> {
 impl<T: Serialize> OptionResultResponseExt<T> for AppResult<T> {
     fn is_empty(&self) -> bool {
         match self {
-            Ok(_) => true,
+            Ok(_) => false,
             Err(e) => match e.downcast_ref::<AppMessage>() {
                 Some(message) => matches!(message, AppMessage::EntityNotFound(..)),
                 None => false,
@@ -68,6 +68,7 @@ mod tests {
     use crate::enums::ResponseCode;
     use foxtive::prelude::AppResult;
     use ntex::http::StatusCode;
+    use ntex::web::WebResponseError;
     use serde_json::json;
 
     #[test]
@@ -92,9 +93,8 @@ mod tests {
         match response {
             Ok(_) => panic!("Expected Err, but got Ok"),
             Err(e) => {
-                let err = e.error.downcast::<AppMessage>().unwrap();
                 // Verify that the error was correctly propagated
-                assert_eq!(err.status_code(), StatusCode::NOT_FOUND);
+                assert_eq!(e.status_code(), StatusCode::NOT_FOUND);
             }
         }
     }
