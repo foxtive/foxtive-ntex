@@ -339,7 +339,10 @@ mod tests {
         let validator = Validator::new().add_rule(
             "file_field",
             FileRules {
-                allowed_content_types: Some(vec!["image/jpeg".to_string(), "image/png".to_string()]),
+                allowed_content_types: Some(vec![
+                    "image/jpeg".to_string(),
+                    "image/png".to_string(),
+                ]),
                 ..Default::default()
             },
         );

@@ -1,5 +1,5 @@
-use foxtive::prelude::AppMessage;
 use crate::helpers::request::RequestHelper;
+use foxtive::prelude::AppMessage;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
 

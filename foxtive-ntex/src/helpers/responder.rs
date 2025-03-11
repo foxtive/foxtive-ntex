@@ -2,8 +2,8 @@ use std::fmt::{Display, Formatter};
 
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
-use foxtive::helpers::json::json_empty;
 use crate::helpers::json_message::JsonMessage;
+use foxtive::helpers::json::json_empty;
 use ntex::http::{Response, StatusCode};
 use ntex::web::HttpResponse;
 use serde::{Deserialize, Serialize};

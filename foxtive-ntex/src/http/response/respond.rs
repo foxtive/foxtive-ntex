@@ -1,11 +1,11 @@
-use foxtive::prelude::{AppMessage, AppResult};
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
 use crate::http::response::defs::{Responder, ResultResponse};
-use ntex::http::error::BlockingError;
-use serde::Serialize;
 use crate::http::IntoAppResult;
 use crate::prelude::HttpResult;
+use foxtive::prelude::{AppMessage, AppResult};
+use ntex::http::error::BlockingError;
+use serde::Serialize;
 
 impl<T> Responder for AppResult<T>
 where
@@ -68,8 +68,8 @@ impl Responder for Result<AppMessage, AppMessage> {
 
 #[cfg(test)]
 mod tests {
-    use foxtive::helpers::json::JsonEmpty;
     use super::*;
+    use foxtive::helpers::json::JsonEmpty;
     use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
     use serde_json::json;

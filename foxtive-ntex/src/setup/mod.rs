@@ -1,7 +1,7 @@
-use state::FoxtiveNtexState;
 use crate::http::Method;
 use crate::FOXTIVE_WEB;
 use foxtive::setup::FoxtiveSetup;
+use state::FoxtiveNtexState;
 
 pub mod state;
 
@@ -21,7 +21,7 @@ pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
         public_key: setup.public_key.clone(),
         auth_iss_public_key: setup.auth_iss_public_key.clone(),
     })
-        .await;
+    .await;
 
     let app = create_app_state(setup).await;
 

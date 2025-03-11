@@ -15,11 +15,9 @@ pub type HttpHandler = fn(cfg: &mut ServiceConfig);
 
 pub type HttpResult = Result<ntex::web::HttpResponse, foxtive::Error>;
 
-
 pub trait IntoAppResult<T> {
     fn into_app_result(self) -> AppResult<T>;
 }
-
 
 impl<T> IntoAppResult<T> for Result<AppResult<T>, BlockingError<AppMessage>> {
     fn into_app_result(self) -> AppResult<T> {
