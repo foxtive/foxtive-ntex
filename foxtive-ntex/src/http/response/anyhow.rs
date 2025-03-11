@@ -1,14 +1,14 @@
 use foxtive::prelude::AppMessage;
 use ntex::http::body::Body;
+use ntex::http::error::BlockingError;
 use ntex::http::{header, StatusCode};
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::fmt::{Debug, Display, Formatter};
-use foxtive::Error;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub struct ResponseError {
-    pub error: Error,
+    pub error: foxtive::Error,
 }
 
 impl ResponseError {
@@ -27,7 +27,13 @@ impl WebResponseError for ResponseError {
     fn status_code(&self) -> StatusCode {
         match self.error.downcast_ref::<AppMessage>() {
             Some(msg) => msg.status_code(),
-            None => StatusCode::INTERNAL_SERVER_ERROR,
+            None => match self.error.downcast_ref::<BlockingError<AppMessage>>() {
+                None => StatusCode::INTERNAL_SERVER_ERROR,
+                Some(err) => match err {
+                    BlockingError::Error(msg) => msg.status_code(),
+                    BlockingError::Canceled => StatusCode::INTERNAL_SERVER_ERROR,
+                },
+            },
         }
     }
 
@@ -49,8 +55,8 @@ impl WebResponseError for ResponseError {
     }
 }
 
-impl From<Error> for ResponseError {
-    fn from(value: Error) -> Self {
+impl From<foxtive::Error> for ResponseError {
+    fn from(value: foxtive::Error) -> Self {
         ResponseError::new(value)
     }
 }

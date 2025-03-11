@@ -72,6 +72,7 @@ mod tests {
     use foxtive::helpers::json::JsonEmpty;
     use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
+    use ntex::web::WebResponseError;
     use serde_json::json;
 
     #[test]
@@ -111,8 +112,15 @@ mod tests {
         match result {
             Ok(_) => panic!("Expected Err, but got OK"),
             Err(e) => {
-                let err = e.error.downcast::<AppMessage>().unwrap();
-                assert_eq!(err.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+                let err = e.error.downcast::<BlockingError<AppMessage>>().unwrap();
+                match err {
+                    BlockingError::Error(_e) => {
+                        panic!("Expected BlockingError::Error, but got BlockingError::Canceled");
+                    }
+                    BlockingError::Canceled => {
+                        assert_eq!(err.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+                    }
+                }
             }
         }
     }
@@ -126,8 +134,7 @@ mod tests {
         match result {
             Ok(_) => panic!("Expected Err, but got Ok"),
             Err(e) => {
-                let err = e.error.downcast::<AppMessage>().unwrap();
-                assert_eq!(err.status_code(), StatusCode::BAD_REQUEST);
+                assert_eq!(e.status_code(), StatusCode::BAD_REQUEST);
             }
         }
     }

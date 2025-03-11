@@ -1149,9 +1149,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d7fe012a52f66aff8237ff85f378ce28dbb42e17da13945f023d7a7e3edd1f7"
+checksum = "0f2c3e0c19951a3eda9348786e2a2577148a9ba3ead83d250cbd7c463d08f33f"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -1183,7 +1183,7 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "chrono",
  "foxtive",
