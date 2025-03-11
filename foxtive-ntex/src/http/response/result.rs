@@ -1,10 +1,10 @@
 use crate::contracts::ResponseCodeContract;
 use crate::helpers::responder::Responder;
+use crate::http::response::anyhow::ResponseError;
 use crate::http::response::ext::{OptionResultResponseExt, ResultResponseExt};
 use crate::http::HttpResult;
 use foxtive::prelude::{AppMessage, AppResult};
 use serde::Serialize;
-use crate::http::response::anyhow::ResponseError;
 
 impl ResultResponseExt for Result<AppMessage, AppMessage> {
     fn send_result<C: ResponseCodeContract>(self, c: C) -> HttpResult {

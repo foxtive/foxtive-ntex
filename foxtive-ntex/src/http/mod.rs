@@ -8,9 +8,9 @@ pub mod middlewares;
 pub mod response;
 pub mod server;
 
+use crate::http::response::anyhow::ResponseError;
 pub use ntex::http::Method;
 pub use ntex_cors::Cors;
-use crate::http::response::anyhow::ResponseError;
 
 pub type HttpHandler = fn(cfg: &mut ServiceConfig);
 
