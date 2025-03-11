@@ -10,10 +10,11 @@ pub mod server;
 
 pub use ntex::http::Method;
 pub use ntex_cors::Cors;
+use crate::http::response::anyhow::ResponseError;
 
 pub type HttpHandler = fn(cfg: &mut ServiceConfig);
 
-pub type HttpResult = Result<ntex::web::HttpResponse, foxtive::Error>;
+pub type HttpResult = Result<ntex::web::HttpResponse, ResponseError>;
 
 pub trait IntoAppResult<T> {
     fn into_app_result(self) -> AppResult<T>;

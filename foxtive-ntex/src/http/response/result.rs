@@ -1,27 +1,28 @@
 use crate::contracts::ResponseCodeContract;
 use crate::helpers::responder::Responder;
-use crate::http::response::defs::{OptionResultResponse, ResultResponse};
+use crate::http::response::ext::{OptionResultResponseExt, ResultResponseExt};
 use crate::http::HttpResult;
 use foxtive::prelude::{AppMessage, AppResult};
 use serde::Serialize;
+use crate::http::response::anyhow::ResponseError;
 
-impl ResultResponse for Result<AppMessage, AppMessage> {
+impl ResultResponseExt for Result<AppMessage, AppMessage> {
     fn send_result<C: ResponseCodeContract>(self, c: C) -> HttpResult {
         match self {
             Ok(data) => Ok(Responder::message(&data.message(), c)),
-            Err(err) => Err(err.into()),
+            Err(err) => Err(ResponseError::new(err.into())),
         }
     }
 
     fn send_result_msg<C: ResponseCodeContract>(self, c: C, _: &str) -> HttpResult {
         match self {
             Ok(data) => Ok(Responder::message(&data.message(), c)),
-            Err(err) => Err(err.into()),
+            Err(err) => Err(ResponseError::new(err.ae())),
         }
     }
 }
 
-impl<T: Serialize> OptionResultResponse<T> for AppResult<T> {
+impl<T: Serialize> OptionResultResponseExt<T> for AppResult<T> {
     fn is_empty(&self) -> bool {
         match self {
             Ok(_) => true,
@@ -45,18 +46,18 @@ impl<T: Serialize> OptionResultResponse<T> for AppResult<T> {
     }
 }
 
-impl<T: Serialize> ResultResponse for AppResult<T> {
+impl<T: Serialize> ResultResponseExt for AppResult<T> {
     fn send_result<C: ResponseCodeContract>(self, code: C) -> HttpResult {
         match self {
             Ok(data) => Ok(Responder::send(data, code)),
-            Err(err) => Err(err),
+            Err(err) => Err(ResponseError::new(err)),
         }
     }
 
     fn send_result_msg<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult {
         match self {
             Ok(data) => Ok(Responder::send_msg(data, code, msg)),
-            Err(err) => Err(err),
+            Err(err) => Err(ResponseError::new(err)),
         }
     }
 }
@@ -91,7 +92,7 @@ mod tests {
         match response {
             Ok(_) => panic!("Expected Err, but got Ok"),
             Err(e) => {
-                let err = e.downcast::<AppMessage>().unwrap();
+                let err = e.error.downcast::<AppMessage>().unwrap();
                 // Verify that the error was correctly propagated
                 assert_eq!(err.status_code(), StatusCode::NOT_FOUND);
             }
@@ -123,7 +124,7 @@ mod tests {
         let response = result.send_response(ResponseCode::Ok, "fail");
         match response {
             Err(e) => {
-                let err = e.downcast::<AppMessage>().unwrap();
+                let err = e.error.downcast::<AppMessage>().unwrap();
                 assert_eq!(
                     err.status_code(),
                     AppMessage::InternalServerError.status_code()

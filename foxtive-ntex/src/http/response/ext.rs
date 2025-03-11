@@ -2,13 +2,13 @@ use crate::contracts::ResponseCodeContract;
 use crate::http::HttpResult;
 use ntex::web::HttpResponse;
 
-pub trait ResultResponse {
+pub trait ResultResponseExt {
     fn send_result<C: ResponseCodeContract>(self, code: C) -> HttpResult;
 
     fn send_result_msg<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult;
 }
 
-pub trait Responder {
+pub trait ResponderExt {
     fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult;
 
     fn respond_msg(self, suc: &str) -> HttpResult;
@@ -16,7 +16,7 @@ pub trait Responder {
     fn respond(self) -> HttpResult;
 }
 
-pub trait StructResponse: Sized {
+pub trait StructResponseExt: Sized {
     fn into_response(self) -> HttpResponse;
 
     fn respond_code<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult;
@@ -26,7 +26,7 @@ pub trait StructResponse: Sized {
     fn respond(self) -> HttpResult;
 }
 
-pub trait OptionResultResponse<T> {
+pub trait OptionResultResponseExt<T> {
     fn is_empty(&self) -> bool;
 
     fn is_error(&self) -> bool;
@@ -34,4 +34,8 @@ pub trait OptionResultResponse<T> {
     fn is_error_or_empty(&self) -> bool;
 
     fn send_response<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult;
+}
+
+pub trait IntoHttpResultExt {
+    fn http_result(self) -> HttpResult;
 }

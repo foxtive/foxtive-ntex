@@ -1,13 +1,13 @@
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
-use crate::http::response::defs::{Responder, ResultResponse};
+use crate::http::response::ext::{ResponderExt, ResultResponseExt};
 use crate::http::IntoAppResult;
 use crate::prelude::HttpResult;
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
 use serde::Serialize;
 
-impl<T> Responder for AppResult<T>
+impl<T> ResponderExt for AppResult<T>
 where
     T: Sized + Serialize,
 {
@@ -24,12 +24,12 @@ where
     }
 }
 
-impl<T> Responder for Result<T, BlockingError<AppMessage>>
+impl<T> ResponderExt for Result<T, BlockingError<AppMessage>>
 where
     T: Serialize + Sized,
 {
     fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
-        <Result<T, foxtive::Error> as ResultResponse>::send_result_msg(
+        <Result<T, foxtive::Error> as ResultResponseExt>::send_result_msg(
             self.into_app_result(),
             code,
             msg,
@@ -37,7 +37,7 @@ where
     }
 
     fn respond_msg(self, msg: &str) -> HttpResult {
-        <Result<T, foxtive::Error> as ResultResponse>::send_result_msg(
+        <Result<T, foxtive::Error> as ResultResponseExt>::send_result_msg(
             self.into_app_result(),
             ResponseCode::Ok,
             msg,
@@ -45,14 +45,14 @@ where
     }
 
     fn respond(self) -> HttpResult {
-        <Result<T, foxtive::Error> as ResultResponse>::send_result(
+        <Result<T, foxtive::Error> as ResultResponseExt>::send_result(
             self.into_app_result(),
             ResponseCode::Ok,
         )
     }
 }
 
-impl Responder for Result<AppMessage, AppMessage> {
+impl ResponderExt for Result<AppMessage, AppMessage> {
     fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
         self.send_result_msg(code.clone(), msg)
     }
@@ -111,7 +111,7 @@ mod tests {
         match result {
             Ok(_) => panic!("Expected Err, but got OK"),
             Err(e) => {
-                let err = e.downcast::<AppMessage>().unwrap();
+                let err = e.error.downcast::<AppMessage>().unwrap();
                 assert_eq!(err.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
             }
         }
@@ -126,7 +126,7 @@ mod tests {
         match result {
             Ok(_) => panic!("Expected Err, but got Ok"),
             Err(e) => {
-                let err = e.downcast::<AppMessage>().unwrap();
+                let err = e.error.downcast::<AppMessage>().unwrap();
                 assert_eq!(err.status_code(), StatusCode::BAD_REQUEST);
             }
         }

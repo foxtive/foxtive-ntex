@@ -3,10 +3,18 @@ use ntex::http::body::Body;
 use ntex::http::{header, StatusCode};
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::fmt::{Debug, Display, Formatter};
+use foxtive::Error;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub struct ResponseError {
-    pub error: foxtive::Error,
+    pub error: Error,
+}
+
+impl ResponseError {
+    pub fn new(error: foxtive::Error) -> Self {
+        Self { error }
+    }
 }
 
 impl Display for ResponseError {
@@ -38,5 +46,11 @@ impl WebResponseError for ResponseError {
             Some(msg) => respond(msg.message()),
             None => respond("Internal Server Error".to_string()),
         }
+    }
+}
+
+impl From<Error> for ResponseError {
+    fn from(value: Error) -> Self {
+        ResponseError::new(value)
     }
 }

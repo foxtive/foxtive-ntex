@@ -1,12 +1,12 @@
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
 use crate::helpers::responder::Responder;
-use crate::http::response::defs::StructResponse;
+use crate::http::response::ext::StructResponseExt;
 use crate::http::HttpResult;
 use ntex::web::HttpResponse;
 use serde::Serialize;
 
-impl<T: Serialize> StructResponse for T {
+impl<T: Serialize> StructResponseExt for T {
     fn into_response(self) -> HttpResponse {
         Responder::send(self, ResponseCode::Ok)
     }
