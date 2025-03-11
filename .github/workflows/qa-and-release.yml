@@ -11,24 +11,121 @@ env:
   RUSTFLAGS: "-Dwarnings"
 
 jobs:
-  build:
-    name: Build & Test
+  detect-changes:
+    name: Detect Changed Crates
     runs-on: ubuntu-latest
+
+    outputs:
+      changed_crates: ${{ steps.detect-changes.outputs.changed_crates }}
 
     steps:
       - uses: actions/checkout@v4
-      - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        with:
+          fetch-depth: 0  # Fetch all history
 
-      - name: Run Tests
-        run: cargo test --workspace --features=regex,crypto,base64,hmac,reqwest,multipart
+      - name: Detect changed crates
+        id: detect-changes
+        run: |
+          # Check if HEAD~1 exists
+          if git rev-parse HEAD~1 > /dev/null 2>&1; then
+            CHANGED_CRATES=$(git diff --name-only HEAD~1..HEAD | grep -E '^[^/]+/' | cut -d '/' -f 1 | sort | uniq)
+          else
+            # If HEAD~1 does not exist, assume all crates are changed (e.g., first commit)
+            CHANGED_CRATES=$(find . -maxdepth 1 -type d -not -path './.*' -not -path '.' | cut -d '/' -f 2 | sort | uniq)
+          fi
+
+          # Filter directories to include only those with "foxtive" in their names
+          VALID_CRATES=""
+          for CRATE in $CHANGED_CRATES; do
+            if [[ "$CRATE" == *"foxtive"* ]] && [ -f "$CRATE/Cargo.toml" ]; then
+              VALID_CRATES="$VALID_CRATES $CRATE"
+            fi
+          done
+
+          echo "Changed crates: $VALID_CRATES"
+          echo "::set-output name=changed_crates::$VALID_CRATES"
+
+  test-code:
+    name: Test Codebase
+    runs-on: ubuntu-latest
+    needs: detect-changes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+
+      - name: Run Clippy and Tests on changed crates
+        run: |
+          CHANGED_CRATES="${{ needs.detect-changes.outputs.changed_crates }}"
+          if [ -z "$CHANGED_CRATES" ]; then
+            echo "No crates changed."
+            exit 0
+          fi
+
+          for CRATE in $CHANGED_CRATES; do
+            echo -e "\n"
+            echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+            echo "Running Clippy and Tests for crate: $CRATE"
+            cargo clippy --package $CRATE --all-targets --all-features
+            cargo test --package $CRATE --all-features
+            echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+          done
+
+  release:
+    name: Release Package
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-code]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+
+      - name: Publish changed crates
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          CHANGED_CRATES="${{ needs.detect-changes.outputs.changed_crates }}"
+          if [ -z "$CHANGED_CRATES" ]; then
+            echo "No crates changed. Skipping release."
+            exit 0
+          fi
+
+          for CRATE in $CHANGED_CRATES; do
+            echo -e "\n"
+            echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+            echo "Changes detected in $CRATE, publishing..."
+            cargo publish -p $CRATE
+            echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+          done
+
+  lint-code:
+    name: Lint Codebase
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-code, release]
+    permissions:
+      contents: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Run cargo fmt
-        if: github.event_name == 'push'
         run: cargo fmt --all
 
       - name: Commit fmt changes
-        if: github.event_name == 'push'
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
@@ -36,5 +133,4 @@ jobs:
           git commit -m "style(cargo-fmt): apply changes" || echo "No changes to commit"
 
       - name: Push fmt changes
-        if: github.event_name == 'push' && success()
         run: git push origin HEAD:${{ github.ref }}
