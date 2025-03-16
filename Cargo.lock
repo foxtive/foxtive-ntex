@@ -1184,7 +1184,7 @@ version = "0.3.0"
 dependencies = [
  "chrono",
  "foxtive",
- "foxtive-ntex-multipart 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "foxtive-ntex-multipart 0.1.0",
  "futures-util",
  "log",
  "ntex",
@@ -1202,23 +1202,23 @@ dependencies = [
 [[package]]
 name = "foxtive-ntex-multipart"
 version = "0.1.0"
-dependencies = [
- "futures",
- "ntex",
- "ntex-multipart",
- "thiserror 2.0.12",
- "tokio",
-]
-
-[[package]]
-name = "foxtive-ntex-multipart"
-version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed47ded7813c3c9df05c76f80cc19dad87ddd4c79d2210d3abde3a3a5ecfc8ea"
 dependencies = [
  "futures",
  "ntex",
  "ntex-multipart",
+ "tokio",
+]
+
+[[package]]
+name = "foxtive-ntex-multipart"
+version = "0.2.0"
+dependencies = [
+ "futures",
+ "ntex",
+ "ntex-multipart",
+ "thiserror 2.0.12",
  "tokio",
 ]
 
@@ -3702,7 +3702,6 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
- "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2 0.5.8",
