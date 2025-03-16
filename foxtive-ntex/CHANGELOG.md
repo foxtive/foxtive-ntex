@@ -1,6 +1,12 @@
 # Foxtive-Ntex Changelog
 Foxtive-Ntex changelog file 
 
+### 0.5.0
+* fix: renamed 'FOXTIVE_WEB' to 'FOXTIVE_NTEX'
+
+### 0.4.0
+* fix: renamed 'FOXTIVE_WEB' to 'FOXTIVE_NTEX'
+
 ### 0.3.0
 * feat(http): introduced HttpError to handle crate-level error
 
