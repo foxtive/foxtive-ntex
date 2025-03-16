@@ -3,16 +3,8 @@ name: Code QA & Release
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - '**/*.rs'
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
   pull_request:
     branches: [ "main" ]
-    paths:
-      - '**/*.rs'
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
 
 env:
   CARGO_TERM_COLOR: always
@@ -36,7 +28,7 @@ jobs:
         run: |
           # Check if HEAD~1 exists
           if git rev-parse HEAD~1 > /dev/null 2>&1; then
-            CHANGED_CRATES=$(git diff --name-only HEAD~1..HEAD -- '*.rs' '*/Cargo.toml' | cut -d '/' -f 1 | sort | uniq)
+            CHANGED_CRATES=$(git diff --name-only HEAD~1..HEAD | grep -E '^[^/]+/' | cut -d '/' -f 1 | sort | uniq)
           else
             # If HEAD~1 does not exist, assume all crates are changed (e.g., first commit)
             CHANGED_CRATES=$(find . -maxdepth 1 -type d -not -path './.*' -not -path '.' | cut -d '/' -f 2 | sort | uniq)
@@ -51,7 +43,7 @@ jobs:
           done
 
           echo "Changed crates: $VALID_CRATES"
-          echo "changed_crates=$VALID_CRATES" >> $GITHUB_ENV
+          echo "::set-output name=changed_crates::$VALID_CRATES"
 
   test-code:
     name: Test Codebase
@@ -69,12 +61,13 @@ jobs:
 
       - name: Run Clippy and Tests on changed crates
         run: |
-          if [ -z "$changed_crates" ]; then
+          CHANGED_CRATES="${{ needs.detect-changes.outputs.changed_crates }}"
+          if [ -z "$CHANGED_CRATES" ]; then
             echo "No crates changed."
             exit 0
           fi
 
-          for CRATE in $changed_crates; do
+          for CRATE in $CHANGED_CRATES; do
             echo -e "\n"
             echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
             echo "Running Clippy and Tests for crate: $CRATE"
@@ -90,7 +83,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -102,15 +96,16 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          if [ -z "$changed_crates" ]; then
+          CHANGED_CRATES="${{ needs.detect-changes.outputs.changed_crates }}"
+          if [ -z "$CHANGED_CRATES" ]; then
             echo "No crates changed. Skipping release."
             exit 0
           fi
 
-          for CRATE in $changed_crates; do
+          for CRATE in $CHANGED_CRATES; do
             echo -e "\n"
             echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-            echo "Publishing $CRATE..."
+            echo "Changes detected in $CRATE, publishing..."
             cargo publish -p $CRATE
             echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
           done
@@ -124,7 +119,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Run cargo fmt
         run: cargo fmt --all
