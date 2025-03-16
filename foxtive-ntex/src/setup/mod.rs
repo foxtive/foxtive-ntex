@@ -1,5 +1,5 @@
 use crate::http::Method;
-use crate::FOXTIVE_WEB;
+use crate::FOXTIVE_NTEX;
 use foxtive::setup::FoxtiveSetup;
 use state::FoxtiveNtexState;
 
@@ -25,7 +25,7 @@ pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
 
     let app = create_app_state(setup).await;
 
-    FOXTIVE_WEB
+    FOXTIVE_NTEX
         .set(app.clone())
         .expect("failed to set up foxtive-ntex");
 

@@ -9,6 +9,6 @@ mod setup;
 
 pub use setup::state::FoxtiveNtexState;
 
-pub static FOXTIVE_WEB: OnceLock<FoxtiveNtexState> = OnceLock::new();
+pub static FOXTIVE_NTEX: OnceLock<FoxtiveNtexState> = OnceLock::new();
 
 pub use crate::helpers::once_lock::FoxtiveNtexExt;
