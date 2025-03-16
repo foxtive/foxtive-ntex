@@ -1,7 +1,7 @@
 # Foxtive-Ntex Changelog
 Foxtive-Ntex changelog file 
 
----
+----
 
 ### 0.5.0 (2024-03-16)
 * refactor(features): remove unused
