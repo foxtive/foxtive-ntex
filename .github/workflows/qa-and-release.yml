@@ -114,6 +114,8 @@ jobs:
     name: Tag Version
     runs-on: ubuntu-latest
     needs: release
+    permissions:
+      contents: write
     if: needs.release.outputs.published_crates != ''
 
     steps:
@@ -138,6 +140,9 @@ jobs:
               echo "Could not extract version for $CRATE"
               continue
             fi
+          
+            git config --global user.name "GitHub Action"
+            git config --global user.email "action@github.com"
 
             TAG="v$VERSION"
             echo "Checking if tag $TAG exists..."
