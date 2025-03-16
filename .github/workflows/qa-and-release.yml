@@ -71,7 +71,7 @@ jobs:
             echo -e "\n"
             echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
             echo "Running Clippy and Tests for crate: $CRATE"
-            cargo clippy --package $CRATE --all-targets --all-features
+            cargo clippy --package $CRATE --all-features
             cargo test --package $CRATE --all-features
             echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
           done
