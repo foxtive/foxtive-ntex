@@ -2,10 +2,11 @@ use crate::file_validator::{ErrorMessage, InputError};
 use crate::FileInput;
 use std::fmt::{Display, Formatter};
 use std::io::Error;
+use thiserror::Error;
 
 pub type MultipartResult<T> = Result<T, MultipartError>;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum MultipartError {
     NoFile,
     IoError(Error),
