@@ -1,6 +1,13 @@
 # Foxtive-Ntex Changelog
 Foxtive-Ntex changelog file 
 
+### 0.5.0 (2024-03-16)
+* refactor(features): remove unused
+* feat(error): impl from validator::ValidationErrors & foxtive_ntex_multipart::MultipartError
+
+### 0.4.0 (2024-03-16)
+* fix: renamed 'FOXTIVE_WEB' to 'FOXTIVE_NTEX'
+
 ### 0.3.0
 * feat(http): introduced HttpError to handle crate-level error
 

@@ -13,30 +13,24 @@ pub enum HttpError {
     #[error("{0}")]
     Std(Box<dyn std::error::Error + Send + Sync + 'static>),
     #[error("{0}")]
-    AppError(Error),
+    AppError(#[from] Error),
     #[error("{0}")]
-    AppMessage(AppMessage),
+    AppMessage(#[from] AppMessage),
     #[error("Payload Error: {0}")]
     PayloadError(#[from] PayloadError),
     #[error("Utf8 Error: {0}")]
     Utf8Error(#[from] FromUtf8Error),
+    #[cfg(feature = "validator")]
+    #[error("Validation Error: {0}")]
+    ValidationError(#[from] validator::ValidationErrors),
+    #[cfg(feature = "multipart")]
+    #[error("Multipart Error: {0}")]
+    MultipartError(#[from] foxtive_ntex_multipart::MultipartError),
 }
 
 impl HttpError {
     pub fn into_app_error(self) -> foxtive::Error {
         foxtive::Error::from(self)
-    }
-}
-
-impl From<AppMessage> for HttpError {
-    fn from(error: AppMessage) -> Self {
-        HttpError::AppMessage(error)
-    }
-}
-
-impl From<Error> for HttpError {
-    fn from(value: Error) -> Self {
-        HttpError::AppError(value)
     }
 }
 

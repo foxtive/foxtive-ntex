@@ -6,5 +6,5 @@ members = [
 ]
 
 [workspace.dependencies]
-thiserror = { version = "2.0.12" }
-ntex = { version = "2.12.2", default-features = false, features = ["tokio"] }
+thiserror = { version = "2.0.12", default-features = false }
+ntex = { version = "2.12.2", default-features = false }
