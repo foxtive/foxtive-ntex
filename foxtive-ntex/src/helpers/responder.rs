@@ -130,6 +130,7 @@ mod tests {
         // Convert buffer to Bytes for further use
         String::from_utf8_lossy(buffer.freeze().as_ref()).to_string()
     }
+
     #[tokio::test]
     async fn test_ok() {
         let data = json!({"key": "value"});
