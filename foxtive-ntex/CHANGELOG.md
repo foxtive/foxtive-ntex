@@ -1,6 +1,8 @@
 # Foxtive-Ntex Changelog
 Foxtive-Ntex changelog file 
 
+---
+
 ### 0.5.0 (2024-03-16)
 * refactor(features): remove unused
 * feat(error): impl from validator::ValidationErrors & foxtive_ntex_multipart::MultipartError
