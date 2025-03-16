@@ -2,7 +2,6 @@ use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use ntex::web::types::Query;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use foxtive::enums::app_message::AppMessage;
 
@@ -60,23 +59,6 @@ pub struct QueryParams {
     ///
     /// Example: `?end_date=2024-12-31`
     pub end_date: Option<NaiveDate>,
-}
-
-#[derive(Deserialize)]
-pub struct IdPathParam {
-    pub id: String,
-}
-
-#[derive(Deserialize)]
-pub struct IdAsUuid {
-    pub id: Uuid,
-}
-
-#[cfg(feature = "validator")]
-#[derive(Deserialize, validator::Validate)]
-pub struct ReasonPayload {
-    #[validate(length(min = 3, max = 1500))]
-    pub reason: String,
 }
 
 impl QueryParams {

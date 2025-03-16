@@ -1,8 +1,8 @@
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
+use crate::helpers::responder::Responder;
 use crate::http::response::ext::{ResponderExt, ResultResponseExt};
-use crate::http::IntoAppResult;
-use crate::prelude::HttpResult;
+use crate::http::{HttpResult, IntoAppResult};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
 use serde::Serialize;
@@ -49,6 +49,23 @@ where
             self.into_app_result(),
             ResponseCode::Ok,
         )
+    }
+}
+
+impl<T> ResponderExt for Result<T, BlockingError<foxtive::Error>>
+where
+    T: Serialize + Sized,
+{
+    fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
+        Ok(Responder::send_msg(self?, code, msg))
+    }
+
+    fn respond_msg(self, msg: &str) -> HttpResult {
+        Ok(Responder::send_msg(self?, ResponseCode::Ok, msg))
+    }
+
+    fn respond(self) -> HttpResult {
+        Ok(Responder::send(self?, ResponseCode::Ok))
     }
 }
 
@@ -112,15 +129,7 @@ mod tests {
         match result {
             Ok(_) => panic!("Expected Err, but got OK"),
             Err(e) => {
-                let err = e.error.downcast::<BlockingError<AppMessage>>().unwrap();
-                match err {
-                    BlockingError::Error(_e) => {
-                        panic!("Expected BlockingError::Error, but got BlockingError::Canceled");
-                    }
-                    BlockingError::Canceled => {
-                        assert_eq!(err.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
-                    }
-                }
+                assert_eq!(e.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
             }
         }
     }

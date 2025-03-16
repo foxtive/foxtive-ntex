@@ -58,7 +58,7 @@ where
                     debug!("calling http controller -> method...");
                     ctx.call(&self.service, request).await
                 }
-                Err(err) => Err(Error::from(ResponseError { error: err })),
+                Err(err) => Err(Error::from(ResponseError::new(err))),
             },
 
             // execute after executing handler
@@ -70,7 +70,7 @@ where
                         // log error and return response generated from controller
                         Err(err) => {
                             error!("[middleware-level-error][post-exec] {:?}", err);
-                            Err(Error::from(ResponseError { error: err }))
+                            Err(Error::from(ResponseError::new(err)))
                         }
                     },
                     Err(err) => {

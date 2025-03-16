@@ -1,6 +1,9 @@
 # Foxtive-Ntex Changelog
 Foxtive-Ntex changelog file 
 
+### 0.3.0
+* feat(http): introduced HttpError to handle crate-level error
+
 ### 0.2.1
 * fix(result): 'is_empty' should return false when value is present
 * fix(responder): should return appropriate status code

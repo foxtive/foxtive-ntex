@@ -1,6 +1,5 @@
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger, Route};
 use crate::http::Method;
-use crate::prelude::FoxtiveNtexState;
 use crate::setup::{make_ntex_state, FoxtiveNtexSetup};
 use foxtive::env_logger::init_env_logger;
 use foxtive::prelude::AppResult;
@@ -8,6 +7,7 @@ use foxtive::setup::{get_server_host_config, load_environment_variables};
 use log::error;
 use ntex::web;
 use std::future::Future;
+use crate::FoxtiveNtexState;
 
 pub struct ServerConfig<TB>
 where
