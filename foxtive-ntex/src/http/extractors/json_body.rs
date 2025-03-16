@@ -1,10 +1,10 @@
+use crate::error::HttpError;
 use foxtive::prelude::AppResult;
 use log::debug;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
-use crate::error::HttpError;
 
 pub struct JsonBody {
     json: String,
@@ -27,7 +27,10 @@ impl JsonBody {
 impl<Err> FromRequest<Err> for JsonBody {
     type Error = HttpError;
 
-    async fn from_request(_req: &HttpRequest, payload: &mut Payload) -> Result<JsonBody, Self::Error> {
+    async fn from_request(
+        _req: &HttpRequest,
+        payload: &mut Payload,
+    ) -> Result<JsonBody, Self::Error> {
         let mut bytes = BytesMut::new();
         while let Some(item) = ntex::util::stream_recv(payload).await {
             bytes.extend_from_slice(&item?);
