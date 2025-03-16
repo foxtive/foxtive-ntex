@@ -15,4 +15,4 @@ thiserror = { workspace = true }
 tokio = { version = "1.44", features = ["fs", "io-util"] }
 
 [dev-dependencies]
-tokio = { version = "1.44.1", features = ["macros"] }
+tokio = { version = "1.44.1", features = ["test-util", "macros"] }

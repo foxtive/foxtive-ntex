@@ -1,6 +1,8 @@
 # Foxtive Ntex Multipart
 This is a simple multipart parser built for [Ntex.rs](https://github.com/ntex-rs/ntex)
 
+---
+
 ## Installation
 Run below
 ```bash
