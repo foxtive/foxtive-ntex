@@ -7,6 +7,18 @@ pub struct IdsVecDto {
 }
 
 #[derive(Deserialize)]
-pub struct IdUuidDto {
+pub struct IdAsUuid {
     pub id: Uuid,
+}
+
+#[derive(Deserialize)]
+pub struct IdPathParam {
+    pub id: String,
+}
+
+#[cfg(feature = "validator")]
+#[derive(Deserialize, validator::Validate)]
+pub struct ReasonPayload {
+    #[validate(length(min = 3, max = 1500))]
+    pub reason: String,
 }

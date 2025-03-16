@@ -5,7 +5,7 @@ use foxtive::{FoxtiveState, FOXTIVE};
 #[allow(unused_imports)]
 use std::sync::{Arc, OnceLock};
 
-pub trait WebOnceLockHelper {
+pub trait FoxtiveNtexExt {
     fn app(&self) -> &FoxtiveNtexState {
         FOXTIVE_WEB.get().unwrap()
     }
@@ -19,4 +19,4 @@ pub trait WebOnceLockHelper {
     }
 }
 
-impl WebOnceLockHelper for OnceLock<FoxtiveNtexState> {}
+impl FoxtiveNtexExt for OnceLock<FoxtiveNtexState> {}
