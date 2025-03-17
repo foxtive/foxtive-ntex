@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.5.1 (2024-03-17)
+* bump(foxtive): to fix app message issue
+
 ### 0.5.0 (2024-03-16)
 * refactor(features): remove unused
 * feat(error): impl from validator::ValidationErrors & foxtive_ntex_multipart::MultipartError

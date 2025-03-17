@@ -42,10 +42,78 @@ jobs:
           echo "Changed crates: $VALID_CRATES"
           echo "::set-output name=changed_crates::$VALID_CRATES"
 
+  test-code:
+    name: Test Codebase
+    runs-on: ubuntu-latest
+    needs: detect-changes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+
+      - name: Run Clippy and Tests on changed crates
+        run: |
+          CHANGED_CRATES="${{ needs.detect-changes.outputs.changed_crates }}"
+          if [ -z "$CHANGED_CRATES" ]; then
+            echo "No crates changed."
+            exit 0
+          fi
+
+          for CRATE in $CHANGED_CRATES; do
+            echo "Running Clippy and Tests for crate: $CRATE"
+            cargo clippy --package $CRATE --all-features
+            cargo test --package $CRATE --all-features
+          done
+
+  release:
+    name: Release Package
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-code]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    outputs:
+      published_crates: ${{ steps.publish.outputs.published_crates }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for tag creation
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+
+      - name: Publish changed crates
+        id: publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          CHANGED_CRATES="${{ needs.detect-changes.outputs.changed_crates }}"
+          if [ -z "$CHANGED_CRATES" ]; then
+            echo "No crates changed. Skipping release."
+            exit 0
+          fi
+
+          PUBLISHED_CRATES=""
+          for CRATE in $CHANGED_CRATES; do
+            echo "Publishing $CRATE..."
+            cargo publish -p $CRATE && PUBLISHED_CRATES="$PUBLISHED_CRATES $CRATE"
+          done
+
+          echo "::set-output name=published_crates::$PUBLISHED_CRATES"
+
   tag-version:
     name: Tag Version
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: release
     permissions:
       contents: write
     if: needs.release.outputs.published_crates != ''
@@ -90,7 +158,7 @@ jobs:
   lint-code:
     name: Lint Codebase
     runs-on: ubuntu-latest
-    needs: [detect-changes, tag-version]
+    needs: [detect-changes, test-code, release, tag-version]
     permissions:
       contents: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
