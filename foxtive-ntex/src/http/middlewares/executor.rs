@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::http::middlewares::Middleware;
 use crate::http::response::anyhow::ResponseError;
 use log::{debug, error, info};
@@ -7,12 +8,12 @@ use ntex::web::{Error, WebRequest};
 
 #[derive(Clone)]
 pub struct MiddlewareExecutor {
-    handler: Middleware,
+    handler: Arc<Middleware>,
 }
 
 impl MiddlewareExecutor {
     pub fn new(handler: Middleware) -> Self {
-        MiddlewareExecutor { handler }
+        MiddlewareExecutor { handler: Arc::new(handler) }
     }
 }
 
@@ -29,7 +30,7 @@ impl<S> ServiceMiddleware<S> for MiddlewareExecutor {
 
 pub struct ExecutorMiddlewareInternal<S> {
     service: S,
-    middleware: Middleware,
+    middleware: Arc<Middleware>,
 }
 
 impl<S, Err> Service<web::WebRequest<Err>> for ExecutorMiddlewareInternal<S>
@@ -50,7 +51,7 @@ where
         let (req, payload) = request.into_parts();
         info!("{} {}", req.method(), req.path());
 
-        match self.middleware {
+        match *self.middleware {
             // execute before calling handler
             Middleware::Before(ref mid) => match mid(req).await {
                 Ok(req) => {
