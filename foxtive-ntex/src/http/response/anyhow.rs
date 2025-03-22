@@ -61,10 +61,12 @@ impl From<BlockingError<foxtive::Error>> for ResponseError {
 }
 
 pub mod helpers {
+    use crate::contracts::ResponseCodeContract;
+    use crate::enums::ResponseCode;
+    use crate::helpers::responder::Responder;
     use foxtive::prelude::AppMessage;
-    use ntex::http::body::Body;
     use ntex::http::error::BlockingError;
-    use ntex::http::{header, StatusCode};
+    use ntex::http::StatusCode;
     use ntex::web::HttpResponse;
 
     pub fn make_status_code(err: &foxtive::Error) -> StatusCode {
@@ -102,12 +104,7 @@ pub mod helpers {
     }
 
     pub fn make_json_response(body: String, status: StatusCode) -> HttpResponse {
-        let mut resp = HttpResponse::new(status);
-        resp.headers_mut().insert(
-            header::CONTENT_TYPE,
-            header::HeaderValue::from_static("application/json"),
-        );
-
-        resp.set_body(Body::from(body))
+        let code = ResponseCode::from_status(status);
+        Responder::message(&body, code)
     }
 }

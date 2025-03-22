@@ -14,7 +14,9 @@ pub type AfterMiddlewareHandler =
 
 #[derive(Clone)]
 pub enum Middleware {
+    /// Before middleware, called before the request is handled by the handler
     Before(BeforeMiddlewareHandler),
+    /// After middleware, called after the request is handled by the handler
     After(AfterMiddlewareHandler),
 }
 
