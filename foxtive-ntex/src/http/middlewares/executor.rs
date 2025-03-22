@@ -1,10 +1,10 @@
-use std::sync::Arc;
 use crate::http::middlewares::Middleware;
 use crate::http::response::anyhow::ResponseError;
 use log::{debug, error, info};
 use ntex::service::{Middleware as ServiceMiddleware, Service, ServiceCtx};
 use ntex::web;
 use ntex::web::{Error, WebRequest};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct MiddlewareExecutor {
@@ -13,7 +13,9 @@ pub struct MiddlewareExecutor {
 
 impl MiddlewareExecutor {
     pub fn new(handler: Middleware) -> Self {
-        MiddlewareExecutor { handler: Arc::new(handler) }
+        MiddlewareExecutor {
+            handler: Arc::new(handler),
+        }
     }
 }
 
