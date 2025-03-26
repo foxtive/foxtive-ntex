@@ -131,7 +131,10 @@ mod tests {
 
     #[test]
     fn test_std_error() {
-        let error = HttpError::Std(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Test")));
+        let error = HttpError::Std(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Test",
+        )));
         let app_error = make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }
