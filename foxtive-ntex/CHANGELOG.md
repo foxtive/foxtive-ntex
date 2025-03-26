@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.5.4 (2024-03-27)
+* fix(json-body): return bad request error when deserialization fails
+
 ### 0.5.3 (2024-03-27)
 * fix(http-error): convert and return proper error response
 

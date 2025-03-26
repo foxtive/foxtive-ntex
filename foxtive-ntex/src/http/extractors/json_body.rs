@@ -1,5 +1,5 @@
 use crate::error::HttpError;
-use foxtive::prelude::AppResult;
+use foxtive::prelude::{AppMessage, AppResult};
 use log::debug;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
@@ -16,7 +16,9 @@ impl JsonBody {
     }
 
     pub fn deserialize<T: DeserializeOwned>(&self) -> AppResult<T> {
-        Ok(serde_json::from_str::<T>(&self.json)?)
+        serde_json::from_str::<T>(&self.json).map_err(|e| {
+            HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string())).into_app_error()
+        })
     }
 
     pub fn json_value(&self) -> AppResult<serde_json::Value> {
@@ -47,6 +49,8 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json::json;
     use std::collections::HashMap;
+    use ntex::http::StatusCode;
+    use ntex::web::WebResponseError;
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct TestStruct {
@@ -88,6 +92,13 @@ mod tests {
 
         let result: AppResult<TestStruct> = json_body.deserialize();
         assert!(result.is_err());
+        let error = result.unwrap_err().downcast::<HttpError>().unwrap();
+
+        assert_eq!(error.status_code(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "invalid type: string \"invalid_int\", expected i32 at line 1 column 44"
+        );
     }
 
     #[test]
