@@ -3,6 +3,12 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.5.3 (2024-03-27)
+* fix(http-error): convert and return proper error response
+
+### 0.5.2 (2024-03-22)
+* fix(message): return json-formatted error message
+
 ### 0.5.1 (2024-03-17)
 * bump(foxtive): to fix app message issue
 
