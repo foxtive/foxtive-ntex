@@ -80,7 +80,7 @@ impl WebResponseError for HttpError {
     }
 }
 
-mod helpers {
+pub(crate) mod helpers {
     use crate::enums::ResponseCode;
     use crate::helpers::responder::Responder;
     use crate::http::response::anyhow::helpers::make_response;
@@ -131,7 +131,10 @@ mod tests {
 
     #[test]
     fn test_std_error() {
-        let error = HttpError::Std(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Test")));
+        let error = HttpError::Std(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Test",
+        )));
         let app_error = make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }
