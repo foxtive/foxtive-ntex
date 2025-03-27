@@ -80,7 +80,7 @@ impl WebResponseError for HttpError {
     }
 }
 
-mod helpers {
+pub(crate) mod helpers {
     use crate::enums::ResponseCode;
     use crate::helpers::responder::Responder;
     use crate::http::response::anyhow::helpers::make_response;

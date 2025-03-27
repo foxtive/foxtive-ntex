@@ -1,6 +1,6 @@
 use crate::error::HttpError;
 use foxtive::prelude::{AppMessage, AppResult};
-use log::debug;
+use log::{debug, error};
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
@@ -17,6 +17,7 @@ impl JsonBody {
 
     pub fn deserialize<T: DeserializeOwned>(&self) -> AppResult<T> {
         serde_json::from_str::<T>(&self.json).map_err(|e| {
+            error!("Error deserializing JSON: {:?}", e);
             HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string())).into_app_error()
         })
     }

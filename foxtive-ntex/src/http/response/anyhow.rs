@@ -64,19 +64,23 @@ pub mod helpers {
     use crate::contracts::ResponseCodeContract;
     use crate::enums::ResponseCode;
     use crate::helpers::responder::Responder;
+    use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
     use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
-    use ntex::web::HttpResponse;
+    use ntex::web::{HttpResponse, WebResponseError};
 
     pub fn make_status_code(err: &foxtive::Error) -> StatusCode {
         match err.downcast_ref::<AppMessage>() {
             Some(msg) => msg.status_code(),
             None => match err.downcast_ref::<BlockingError<AppMessage>>() {
-                None => StatusCode::INTERNAL_SERVER_ERROR,
                 Some(err) => match err {
                     BlockingError::Error(msg) => msg.status_code(),
                     BlockingError::Canceled => StatusCode::INTERNAL_SERVER_ERROR,
+                },
+                None => match err.downcast_ref::<HttpError>() {
+                    None => StatusCode::INTERNAL_SERVER_ERROR,
+                    Some(err) => err.status_code(),
                 },
             },
         }
@@ -88,13 +92,16 @@ pub mod helpers {
         match err.downcast_ref::<AppMessage>() {
             Some(msg) => make_json_response(msg.message(), status),
             None => match err.downcast_ref::<BlockingError<AppMessage>>() {
-                None => make_json_response(
-                    AppMessage::InternalServerError.message(),
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                ),
                 Some(err) => match err {
                     BlockingError::Error(msg) => make_json_response(msg.message(), status),
                     BlockingError::Canceled => make_json_response(
+                        AppMessage::InternalServerError.message(),
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                    ),
+                },
+                None => match err.downcast_ref::<HttpError>() {
+                    Some(err) => crate::error::helpers::make_http_error_response(err),
+                    None => make_json_response(
                         AppMessage::InternalServerError.message(),
                         StatusCode::INTERNAL_SERVER_ERROR,
                     ),
