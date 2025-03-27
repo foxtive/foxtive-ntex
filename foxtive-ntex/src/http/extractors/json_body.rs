@@ -46,11 +46,11 @@ impl<Err> FromRequest<Err> for JsonBody {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ntex::http::StatusCode;
+    use ntex::web::WebResponseError;
     use serde::{Deserialize, Serialize};
     use serde_json::json;
     use std::collections::HashMap;
-    use ntex::http::StatusCode;
-    use ntex::web::WebResponseError;
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct TestStruct {
