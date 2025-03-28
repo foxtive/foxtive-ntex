@@ -29,19 +29,19 @@ pub trait IntoHttpResult {
 
 impl<T> IntoAppResult<T> for Result<AppResult<T>, BlockingError<AppMessage>> {
     fn into_app_result(self) -> AppResult<T> {
-        match self {
-            Ok(res) => res,
-            Err(err) => Err(err.into()),
-        }
+        self.unwrap_or_else(|msg| match msg {
+            BlockingError::Error(err) => err.ar(),
+            BlockingError::Canceled => AppMessage::InternalServerError.ar(),
+        })
     }
 }
 
 impl<T> IntoAppResult<T> for Result<T, BlockingError<AppMessage>> {
     fn into_app_result(self) -> AppResult<T> {
-        match self {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err.into()),
-        }
+        self.map_err(|err| match err {
+            BlockingError::Error(err) => err.ae(),
+            BlockingError::Canceled => AppMessage::InternalServerError.ae(),
+        })
     }
 }
 

@@ -3,3 +3,4 @@ pub mod ext;
 pub mod respond;
 pub mod result;
 pub mod r#struct;
+mod message;

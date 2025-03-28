@@ -69,20 +69,6 @@ where
     }
 }
 
-impl ResponderExt for Result<AppMessage, AppMessage> {
-    fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
-        self.send_result_msg(code.clone(), msg)
-    }
-
-    fn respond_msg(self, msg: &str) -> HttpResult {
-        self.send_result_msg(ResponseCode::Ok, msg)
-    }
-
-    fn respond(self) -> HttpResult {
-        self.send_result(ResponseCode::Ok)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
