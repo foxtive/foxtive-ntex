@@ -1,7 +1,7 @@
+use crate::error::HttpError;
 use crate::helpers::request::RequestHelper;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
-use crate::error::HttpError;
 
 pub struct ClientInfo {
     pub ip: Option<String>,
