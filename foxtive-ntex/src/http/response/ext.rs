@@ -8,6 +8,10 @@ pub trait ResultResponseExt {
     fn send_result_msg<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult;
 }
 
+pub trait AppMessageExt {
+    fn respond(self) -> HttpResult;
+}
+
 pub trait ResponderExt {
     fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult;
 

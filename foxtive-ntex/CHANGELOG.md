@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.6.0 (2024-03-28)
+* feat(message): added AppMessageExt to provide .respond() for AppMessage
+
 ### 0.5.6 (2024-03-28)
 * fix(client-info): use HttpError as error type
 
