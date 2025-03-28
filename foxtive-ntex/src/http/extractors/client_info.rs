@@ -1,7 +1,7 @@
 use crate::helpers::request::RequestHelper;
-use foxtive::prelude::AppMessage;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
+use crate::error::HttpError;
 
 pub struct ClientInfo {
     pub ip: Option<String>,
@@ -15,7 +15,7 @@ impl ClientInfo {
 }
 
 impl<Err> FromRequest<Err> for ClientInfo {
-    type Error = AppMessage;
+    type Error = HttpError;
 
     async fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Result<Self, Self::Error> {
         Ok(ClientInfo {

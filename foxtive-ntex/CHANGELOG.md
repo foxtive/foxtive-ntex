@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.5.6 (2024-03-28)
+* fix(client-info): use HttpError as error type
+
 ### 0.5.5 (2024-03-27)
 * fix(json-body): ensure bad request is returned when there's a deserialization error
 
