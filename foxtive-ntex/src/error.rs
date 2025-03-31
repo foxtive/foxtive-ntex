@@ -110,11 +110,11 @@ pub(crate) mod helpers {
                     ResponseCode::BadRequest,
                     "File Upload Error",
                 )
-            },
+            }
             _ => {
                 error!("Error: {}", err);
                 make_response(&foxtive::Error::from(AppMessage::InternalServerError))
-            },
+            }
         }
     }
 }

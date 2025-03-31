@@ -94,20 +94,20 @@ pub mod helpers {
             Some(msg) => {
                 msg.log();
                 make_json_response(msg.message(), status)
-            },
+            }
             None => match err.downcast_ref::<BlockingError<AppMessage>>() {
                 Some(err) => match err {
                     BlockingError::Error(msg) => {
                         error!("Error: {msg}");
                         make_json_response(msg.message(), status)
-                    },
+                    }
                     BlockingError::Canceled => {
                         error!("Ntex Blocking Error");
                         make_json_response(
                             AppMessage::InternalServerError.message(),
                             StatusCode::INTERNAL_SERVER_ERROR,
                         )
-                    },
+                    }
                 },
                 None => match err.downcast_ref::<HttpError>() {
                     Some(err) => crate::error::helpers::make_http_error_response(err),
@@ -117,7 +117,7 @@ pub mod helpers {
                             AppMessage::InternalServerError.message(),
                             StatusCode::INTERNAL_SERVER_ERROR,
                         )
-                    },
+                    }
                 },
             },
         }
