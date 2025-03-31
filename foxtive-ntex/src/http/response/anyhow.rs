@@ -66,6 +66,7 @@ pub mod helpers {
     use crate::helpers::responder::Responder;
     use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
+    use log::error;
     use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
     use ntex::web::{HttpResponse, WebResponseError};
@@ -90,21 +91,33 @@ pub mod helpers {
         let status = make_status_code(err);
 
         match err.downcast_ref::<AppMessage>() {
-            Some(msg) => make_json_response(msg.message(), status),
+            Some(msg) => {
+                msg.log();
+                make_json_response(msg.message(), status)
+            },
             None => match err.downcast_ref::<BlockingError<AppMessage>>() {
                 Some(err) => match err {
-                    BlockingError::Error(msg) => make_json_response(msg.message(), status),
-                    BlockingError::Canceled => make_json_response(
-                        AppMessage::InternalServerError.message(),
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                    ),
+                    BlockingError::Error(msg) => {
+                        error!("Error: {msg}");
+                        make_json_response(msg.message(), status)
+                    },
+                    BlockingError::Canceled => {
+                        error!("Ntex Blocking Error");
+                        make_json_response(
+                            AppMessage::InternalServerError.message(),
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                        )
+                    },
                 },
                 None => match err.downcast_ref::<HttpError>() {
                     Some(err) => crate::error::helpers::make_http_error_response(err),
-                    None => make_json_response(
-                        AppMessage::InternalServerError.message(),
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                    ),
+                    None => {
+                        error!("Error: {err}");
+                        make_json_response(
+                            AppMessage::InternalServerError.message(),
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                        )
+                    },
                 },
             },
         }

@@ -101,18 +101,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-broadcast"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "435a87a52755b8f27fcf321ac4f04b2802e337c8c4872923137471ec39c37532"
-dependencies = [
- "event-listener",
- "event-listener-strategy",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
 name = "async-channel"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -123,6 +111,12 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
 ]
+
+[[package]]
+name = "atomic-waker"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "autocfg"
@@ -513,9 +507,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07ad8400f30d1c8bfabd68744782255871b8bf837c4f73fcdd6430f65d6de2a4"
+checksum = "9d1e6bf5ccb194a45ce52374587d8d111311f68b3fa51aa079f81eb0a0b531c8"
 dependencies = [
  "anyhow",
  "chrono",
@@ -535,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "chrono",
  "foxtive",
@@ -1085,9 +1079,9 @@ dependencies = [
 
 [[package]]
 name = "ntex"
-version = "2.12.3"
+version = "2.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55d24f2f16da7563bbb49694ac46d28fbff8e50e44ec1d47aed071cb5c561844"
+checksum = "79ce3a7b79b4c52df16503c1ce0ff93fc6e3fa2a4a65d7f080c0615746e2bf42"
 dependencies = [
  "base64",
  "bitflags",
@@ -1299,12 +1293,12 @@ dependencies = [
 
 [[package]]
 name = "ntex-server"
-version = "2.7.1"
+version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d79293309d3413899f486db49ab75bd3c67145b30df50f4083926c0118c2bccb"
+checksum = "c98a261eb20bc4d9bdf0120de5777d61950152c3f6f48f39756ea544a53cdccd"
 dependencies = [
- "async-broadcast",
  "async-channel",
+ "atomic-waker",
  "core_affinity",
  "ctrlc",
  "log",
