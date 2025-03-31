@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.6.1 (2024-04-01)
+* feat(message): log errors to console before sending them as response
+
 ### 0.6.0 (2024-03-28)
 * feat(message): added AppMessageExt to provide .respond() for AppMessage
 

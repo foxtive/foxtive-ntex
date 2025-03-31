@@ -86,6 +86,7 @@ pub(crate) mod helpers {
     use crate::http::response::anyhow::helpers::make_response;
     use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
+    use log::error;
     use ntex::web::HttpResponse;
 
     pub(crate) fn make_http_error_response(err: &HttpError) -> HttpResponse {
@@ -94,18 +95,26 @@ pub(crate) mod helpers {
             HttpError::AppError(e) => make_response(e),
             #[cfg(feature = "validator")]
             HttpError::ValidationError(e) => {
+                error!("Validation Error: {}", e);
                 Responder::send_msg(e.errors(), ResponseCode::BadRequest, "Validation Error")
             }
             HttpError::PayloadError(e) => {
+                error!("Payload Error: {}", e);
                 Responder::send_msg(e.to_string(), ResponseCode::BadRequest, "Payload Error")
             }
             #[cfg(feature = "multipart")]
-            HttpError::MultipartError(err) => Responder::send_msg(
-                err.to_string(),
-                ResponseCode::BadRequest,
-                "File Upload Error",
-            ),
-            _ => make_response(&foxtive::Error::from(AppMessage::InternalServerError)),
+            HttpError::MultipartError(err) => {
+                error!("Multipart Error: {}", err);
+                Responder::send_msg(
+                    err.to_string(),
+                    ResponseCode::BadRequest,
+                    "File Upload Error",
+                )
+            },
+            _ => {
+                error!("Error: {}", err);
+                make_response(&foxtive::Error::from(AppMessage::InternalServerError))
+            },
         }
     }
 }
