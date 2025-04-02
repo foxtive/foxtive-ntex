@@ -68,6 +68,8 @@ mod tests {
     use foxtive::prelude::AppMessage;
     use foxtive::Error;
     use ntex::http::error::BlockingError;
+    use ntex::http::StatusCode;
+    use ntex::web::WebResponseError;
 
     #[test]
     fn test_app_message_respond_success() {
@@ -111,6 +113,16 @@ mod tests {
         let msg: Result<AppMessage, BlockingError<AppMessage>> = Err(BlockingError::Canceled);
         let result = msg.respond();
         assert!(result.is_err());
+
+        let msg: Result<AppMessage, BlockingError<AppMessage>> =
+            Ok(AppMessage::SuccessMessage("Yep"));
+        let status = msg.respond().unwrap().status();
+        assert_eq!(status, StatusCode::OK);
+
+        let msg: Result<AppMessage, BlockingError<AppMessage>> =
+            Err(BlockingError::Error(AppMessage::WarningMessage("Hmm")));
+        let status = msg.respond().unwrap_err().status_code();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
     }
 
     #[test]
