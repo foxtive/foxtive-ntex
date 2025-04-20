@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "MIT"
 description = "Micro-Framework Based on Ntex"
@@ -11,11 +11,13 @@ authors = ["ahmard"]
 strum = ["dep:strum"]
 static = ["dep:ntex-files"]
 validator = ["dep:validator"]
-cache-redis = ["foxtive/cache-redis"]
-cache-filesystem = ["foxtive/cache-filesystem"]
 database = ["foxtive/database"]
 jwt = ["foxtive/jwt"]
 multipart = ["foxtive-ntex-multipart"]
+cache = ["foxtive/cache"]
+cache-redis = ["cache", "foxtive/cache-redis"]
+cache-in-memory = ["cache", "foxtive/cache-in-memory"]
+cache-filesystem = ["cache", "foxtive/cache-filesystem"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -34,7 +36,7 @@ ntex-cors = { version = "2.0.0" }
 validator = { version = "0.20.0", features = ["derive"], optional = true }
 strum = { version = "0.27.1", optional = true, default-features = false }
 
-foxtive = { version = "0.7.1" }
+foxtive = { version = "0.8.0" }
 foxtive-ntex-multipart = { version = "0.2.1", optional = true }
 
 [dev-dependencies]
