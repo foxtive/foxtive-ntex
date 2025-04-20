@@ -18,6 +18,8 @@ where
     pub private_key: String,
     pub public_key: String,
     pub auth_iss_public_key: String,
+    #[cfg(any(feature = "cache-redis", feature = "cache-filesystem"))]
+    pub cache_driver_setup: foxtive::setup::CacheDriverSetup,
 
     #[cfg(feature = "static")]
     pub static_config: StaticFileConfig,
@@ -66,6 +68,8 @@ where
         auth_iss_public_key: config.auth_iss_public_key,
         allowed_origins: config.allowed_origins,
         allowed_methods: config.allowed_methods,
+        #[cfg(any(feature = "cache-redis", feature = "cache-filesystem"))]
+        cache_driver_setup: config.cache_driver_setup,
     })
     .await;
 
