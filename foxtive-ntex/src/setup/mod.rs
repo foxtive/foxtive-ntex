@@ -12,7 +12,7 @@ pub struct FoxtiveNtexSetup {
     pub auth_iss_public_key: String,
     pub allowed_origins: Vec<String>,
     pub allowed_methods: Vec<Method>,
-    #[cfg(any(feature = "cache-redis", feature = "cache-filesystem"))]
+    #[cfg(feature = "cache")]
     pub cache_driver_setup: foxtive::setup::CacheDriverSetup,
 }
 
@@ -24,7 +24,7 @@ pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
         private_key: setup.private_key,
         public_key: setup.public_key,
         auth_iss_public_key: setup.auth_iss_public_key,
-        #[cfg(any(feature = "cache-redis", feature = "cache-filesystem"))]
+        #[cfg(feature = "cache")]
         cache_driver_setup: setup.cache_driver_setup,
     })
     .await;
