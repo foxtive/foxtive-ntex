@@ -12,18 +12,22 @@ pub struct FoxtiveNtexSetup {
     pub auth_iss_public_key: String,
     pub allowed_origins: Vec<String>,
     pub allowed_methods: Vec<Method>,
+    #[cfg(any(feature = "cache-redis", feature = "cache-filesystem"))]
+    pub cache_driver_setup: foxtive::setup::CacheDriverSetup,
 }
 
 pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
+    let app = create_app_state(&setup).await;
+
     foxtive::setup::make_app_state(FoxtiveSetup {
-        env_prefix: setup.env_prefix.clone(),
-        private_key: setup.private_key.clone(),
-        public_key: setup.public_key.clone(),
-        auth_iss_public_key: setup.auth_iss_public_key.clone(),
+        env_prefix: setup.env_prefix,
+        private_key: setup.private_key,
+        public_key: setup.public_key,
+        auth_iss_public_key: setup.auth_iss_public_key,
+        #[cfg(any(feature = "cache-redis", feature = "cache-filesystem"))]
+        cache_driver_setup: setup.cache_driver_setup,
     })
     .await;
-
-    let app = create_app_state(setup).await;
 
     FOXTIVE_NTEX
         .set(app.clone())
@@ -32,12 +36,12 @@ pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
     app
 }
 
-async fn create_app_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
+async fn create_app_state(setup: &FoxtiveNtexSetup) -> FoxtiveNtexState {
     FoxtiveNtexState {
         #[cfg(feature = "jwt")]
         auth_pat_prefix: std::env::var(format!("{}_AUTH_PAT_PREFIX", setup.env_prefix)).unwrap(),
 
-        allowed_origins: setup.allowed_origins,
-        allowed_methods: setup.allowed_methods,
+        allowed_origins: setup.allowed_origins.clone(),
+        allowed_methods: setup.allowed_methods.clone(),
     }
 }

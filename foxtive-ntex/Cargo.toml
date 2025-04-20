@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2021"
 license = "MIT"
 description = "Micro-Framework Based on Ntex"
@@ -11,6 +11,8 @@ authors = ["ahmard"]
 strum = ["dep:strum"]
 static = ["dep:ntex-files"]
 validator = ["dep:validator"]
+cache-redis = ["foxtive/cache-redis"]
+cache-filesystem = ["foxtive/cache-filesystem"]
 database = ["foxtive/database"]
 jwt = ["foxtive/jwt"]
 multipart = ["foxtive-ntex-multipart"]
@@ -22,7 +24,7 @@ thiserror = { workspace = true }
 log = { version = "0.4.27" }
 uuid = { version = "1.16.0", default-features = false }
 serde = { version = "1.0.219", default-features = false }
-tokio = { version = "1.44.1", default-features = false }
+tokio = { version = "1.44.2", default-features = false }
 chrono = { version = "0.4.40", default-features = false, features = ["serde"] }
 serde_json = { version = "1.0.140", default-features = false }
 futures-util = { version = "0.3.31", default-features = false }
@@ -32,8 +34,8 @@ ntex-cors = { version = "2.0.0" }
 validator = { version = "0.20.0", features = ["derive"], optional = true }
 strum = { version = "0.27.1", optional = true, default-features = false }
 
-foxtive = { version = "0.6.5" }
+foxtive = { version = "0.7.1" }
 foxtive-ntex-multipart = { version = "0.2.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.44.1", features = ["test-util", "macros"] }
+tokio = { version = "1.44.2", features = ["test-util", "macros"] }
