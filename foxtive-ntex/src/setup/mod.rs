@@ -39,7 +39,7 @@ pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> FoxtiveNtexState {
 async fn create_app_state(setup: &FoxtiveNtexSetup) -> FoxtiveNtexState {
     FoxtiveNtexState {
         #[cfg(feature = "jwt")]
-        auth_pat_prefix: std::env::var(format!("{}_AUTH_PAT_PREFIX", setup.env_prefix)).unwrap(),
+        jwt_secret: std::env::var(format!("{}_JWT_SECRET", setup.env_prefix)).unwrap(),
 
         allowed_origins: setup.allowed_origins.clone(),
         allowed_methods: setup.allowed_methods.clone(),

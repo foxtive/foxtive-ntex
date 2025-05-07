@@ -3,6 +3,12 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.9.0 (2024-05-07)
+* feat(string-body): extractor for string body
+* feat(byte-body): extractor for byte body
+* feat(jwt-auth-token): extractor for bearer token extraction from header and decoding
+* deprecate(json-body.raw()): use body() instead
+
 ### 0.8.0 (2024-04-20)
 * bump(foxtive): to version 0.8
 

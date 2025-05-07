@@ -5,7 +5,7 @@ use std::fmt::{Debug, Formatter};
 pub struct FoxtiveNtexState {
     /// personal access token prefix
     #[cfg(feature = "jwt")]
-    pub auth_pat_prefix: String,
+    pub jwt_secret: String,
 
     /// list of allowed origins
     pub allowed_origins: Vec<String>,
