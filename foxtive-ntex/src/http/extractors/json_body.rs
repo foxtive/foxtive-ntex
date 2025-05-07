@@ -11,10 +11,51 @@ pub struct JsonBody {
 }
 
 impl JsonBody {
+    #[deprecated(
+        since = "0.9.0",
+        note = "Use the 'body' method instead"
+    )]
+    /// Returns the raw JSON string.
+    ///
+    /// # Deprecated
+    /// This method is deprecated. Use [`body()`] instead.
     pub fn raw(&self) -> &String {
         &self.json
     }
 
+    /// Returns a reference to the underlying JSON string.
+    ///
+    /// # Example
+    /// ```
+    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// 
+    /// let json_body = JsonBody::from("{\"key\": \"value\"}");
+    /// assert_eq!(json_body.body(), "{\"key\": \"value\"}");
+    /// ```
+    pub fn body(&self) -> &String {
+        &self.json
+    }
+    
+    /// Consumes the `JsonBody`, returning the inner JSON string.
+    ///
+    /// # Example
+    /// ```
+    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// 
+    /// let json_body = JsonBody::from("{\"key\": \"value\"}");
+    /// let json = json_body.into_body();
+    /// assert_eq!(json, "{\"key\": \"value\"}");
+    /// ```
+    pub fn into_body(self) -> String {
+        self.json
+    }
+
+    /// Deserializes the JSON string to the specified type.
+    ///
+    /// Returns an application result containing the deserialized value or an error if deserialization fails.
+    ///
+    /// # Errors
+    /// Return an error if the JSON string cannot be deserialized to the target type.
     pub fn deserialize<T: DeserializeOwned>(&self) -> AppResult<T> {
         serde_json::from_str::<T>(&self.json).map_err(|e| {
             error!("Error deserializing JSON: {:?}", e);
@@ -22,8 +63,41 @@ impl JsonBody {
         })
     }
 
+    /// Parses and returns the JSON string as a [`serde_json::Value`].
+    ///
+    /// # Errors
+    /// Return an error if the string is not valid JSON.
     pub fn json_value(&self) -> AppResult<serde_json::Value> {
         Ok(serde_json::from_str(&self.json)?)
+    }
+}
+
+impl From<String> for JsonBody {
+    /// Creates a `JsonBody` from a `String`.
+    ///
+    /// # Example
+    /// ```
+    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// 
+    /// let json_str = "{\"key\": \"value\"}".to_string();
+    /// let json_body = JsonBody::from(json_str);
+    /// ```
+    fn from(json: String) -> Self {
+        JsonBody { json }
+    }
+}
+
+impl From<&str> for JsonBody {
+    /// Creates a `JsonBody` from a `&str`.
+    ///
+    /// # Example
+    /// ```
+    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// 
+    /// let json_body = JsonBody::from("{\"key\": \"value\"}");
+    /// ```
+    fn from(json: &str) -> Self {
+        JsonBody { json: json.to_string() }
     }
 }
 
@@ -44,6 +118,7 @@ impl<Err> FromRequest<Err> for JsonBody {
         Ok(JsonBody { json: raw })
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -66,7 +141,7 @@ mod tests {
             json: json_str.clone(),
         };
 
-        assert_eq!(json_body.raw(), &json_str);
+        assert_eq!(json_body.body(), &json_str);
     }
 
     #[test]
