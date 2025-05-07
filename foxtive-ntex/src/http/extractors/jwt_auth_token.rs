@@ -1,10 +1,10 @@
 use crate::error::HttpError;
 use foxtive::prelude::{AppMessage, AppResult};
-use ntex::web::{FromRequest, HttpRequest};
+use jsonwebtoken::{decode, DecodingKey, TokenData, Validation};
+use log::{debug, error};
 use ntex::http::header;
 use ntex::http::Payload;
-use log::{debug, error};
-use jsonwebtoken::{decode, Validation, DecodingKey, TokenData};
+use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -38,7 +38,10 @@ impl JwtAuthToken {
             Ok(TokenData { claims, .. }) => Ok(claims),
             Err(e) => {
                 error!("JWT decode error: {:?}", e);
-                Err(HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string())).into_app_error())
+                Err(
+                    HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string()))
+                        .into_app_error(),
+                )
             }
         }
     }
@@ -57,44 +60,47 @@ impl From<String> for JwtAuthToken {
 
 impl From<&str> for JwtAuthToken {
     fn from(token: &str) -> Self {
-        JwtAuthToken { token: token.to_string() }
+        JwtAuthToken {
+            token: token.to_string(),
+        }
     }
 }
 
 impl<Err> FromRequest<Err> for JwtAuthToken {
     type Error = HttpError;
 
-    async fn from_request(
-        req: &HttpRequest,
-        _payload: &mut Payload,
-    ) -> Result<Self, Self::Error> {
+    async fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Result<Self, Self::Error> {
         let token = req
             .headers()
             .get(header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
             .and_then(|val| {
-                val.strip_prefix("Bearer ").or_else(|| val.strip_prefix("bearer "))
+                val.strip_prefix("Bearer ")
+                    .or_else(|| val.strip_prefix("bearer "))
                     .map(|s| s.trim())
             })
             .ok_or_else(|| {
                 HttpError::AppMessage(AppMessage::WarningMessageString(
                     "Missing or malformed Authorization header".to_string(),
-                )).into_app_error()
+                ))
+                .into_app_error()
             })?;
 
         debug!("[jwt-auth-token] extracted {}", token);
-        Ok(JwtAuthToken { token: token.to_string() })
+        Ok(JwtAuthToken {
+            token: token.to_string(),
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::{Serialize, Deserialize};
-    use jsonwebtoken::{encode, Header, EncodingKey};
-    use ntex::http::{header, Payload};
-    use ntex::web::test::{TestRequest};
     use foxtive::helpers::jwt::Algorithm;
+    use jsonwebtoken::{encode, EncodingKey, Header};
+    use ntex::http::{header, Payload};
+    use ntex::web::test::TestRequest;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
     struct TestClaims {
@@ -104,7 +110,12 @@ mod tests {
     }
 
     fn create_jwt(secret: &str, claims: &TestClaims) -> String {
-        encode(&Header::default(), claims, &EncodingKey::from_secret(secret.as_bytes())).unwrap()
+        encode(
+            &Header::default(),
+            claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+        .unwrap()
     }
 
     fn jwt_req_with_header(token: &str) -> HttpRequest {
@@ -126,7 +137,9 @@ mod tests {
         let req = jwt_req_with_header(&jwt);
         let mut payload = Payload::None;
 
-        let token = <JwtAuthToken as FromRequest<HttpError>>::from_request(&req, &mut payload).await.unwrap();
+        let token = <JwtAuthToken as FromRequest<HttpError>>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
         assert_eq!(token.token(), jwt);
 
         // Show decode utility
@@ -139,7 +152,8 @@ mod tests {
     async fn test_extractor_missing_header() {
         let req = TestRequest::default().to_http_request();
         let mut payload = Payload::None;
-        let token = <JwtAuthToken as FromRequest<HttpError>>::from_request(&req, &mut payload).await;
+        let token =
+            <JwtAuthToken as FromRequest<HttpError>>::from_request(&req, &mut payload).await;
         assert!(token.is_err());
     }
 
@@ -149,7 +163,8 @@ mod tests {
             .header(header::AUTHORIZATION, "BAD")
             .to_http_request();
         let mut payload = Payload::None;
-        let token = <JwtAuthToken as FromRequest<HttpError>>::from_request(&req, &mut payload).await;
+        let token =
+            <JwtAuthToken as FromRequest<HttpError>>::from_request(&req, &mut payload).await;
         assert!(token.is_err());
     }
 

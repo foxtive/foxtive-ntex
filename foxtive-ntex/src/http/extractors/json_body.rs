@@ -11,10 +11,7 @@ pub struct JsonBody {
 }
 
 impl JsonBody {
-    #[deprecated(
-        since = "0.9.0",
-        note = "Use the 'body' method instead"
-    )]
+    #[deprecated(since = "0.9.0", note = "Use the 'body' method instead")]
     /// Returns the raw JSON string.
     ///
     /// # Deprecated
@@ -28,20 +25,20 @@ impl JsonBody {
     /// # Example
     /// ```
     /// use foxtive_ntex::http::extractors::json_body::JsonBody;
-    /// 
+    ///
     /// let json_body = JsonBody::from("{\"key\": \"value\"}");
     /// assert_eq!(json_body.body(), "{\"key\": \"value\"}");
     /// ```
     pub fn body(&self) -> &String {
         &self.json
     }
-    
+
     /// Consumes the `JsonBody`, returning the inner JSON string.
     ///
     /// # Example
     /// ```
     /// use foxtive_ntex::http::extractors::json_body::JsonBody;
-    /// 
+    ///
     /// let json_body = JsonBody::from("{\"key\": \"value\"}");
     /// let json = json_body.into_body();
     /// assert_eq!(json, "{\"key\": \"value\"}");
@@ -78,7 +75,7 @@ impl From<String> for JsonBody {
     /// # Example
     /// ```
     /// use foxtive_ntex::http::extractors::json_body::JsonBody;
-    /// 
+    ///
     /// let json_str = "{\"key\": \"value\"}".to_string();
     /// let json_body = JsonBody::from(json_str);
     /// ```
@@ -93,11 +90,13 @@ impl From<&str> for JsonBody {
     /// # Example
     /// ```
     /// use foxtive_ntex::http::extractors::json_body::JsonBody;
-    /// 
+    ///
     /// let json_body = JsonBody::from("{\"key\": \"value\"}");
     /// ```
     fn from(json: &str) -> Self {
-        JsonBody { json: json.to_string() }
+        JsonBody {
+            json: json.to_string(),
+        }
     }
 }
 
