@@ -1,46 +1,18 @@
+mod config;
+
+pub use config::ServerConfig;
+#[cfg(feature = "static")]
+pub use config::StaticFileConfig;
+
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger, Route};
-use crate::http::Method;
 use crate::setup::{make_ntex_state, FoxtiveNtexSetup};
 use crate::FoxtiveNtexState;
 use foxtive::env_logger::init_env_logger;
 use foxtive::prelude::AppResult;
-use foxtive::setup::{get_server_host_config, load_environment_variables};
+use foxtive::setup::load_environment_variables;
 use log::error;
 use ntex::web;
 use std::future::Future;
-
-pub struct ServerConfig<TB>
-where
-    TB: FnOnce() -> Vec<Route> + Send + Copy + 'static,
-{
-    pub app: String,
-    pub env_prefix: String,
-    pub private_key: String,
-    pub public_key: String,
-    pub auth_iss_public_key: String,
-    #[cfg(feature = "cache")]
-    pub cache_driver_setup: foxtive::setup::CacheDriverSetup,
-
-    #[cfg(feature = "static")]
-    pub static_config: StaticFileConfig,
-
-    /// whether the app bootstrap has started
-    pub has_started_bootstrap: bool,
-
-    /// list of allowed CORS origins
-    pub allowed_origins: Vec<String>,
-
-    /// list of allowed CORS origins
-    pub allowed_methods: Vec<Method>,
-
-    pub boot_thread: TB,
-}
-
-#[cfg(feature = "static")]
-pub struct StaticFileConfig {
-    pub path: String,
-    pub dir: String,
-}
 
 pub fn init_bootstrap(service: &str) -> AppResult<()> {
     load_environment_variables(service);
@@ -62,18 +34,11 @@ where
     }
 
     let app_state = make_ntex_state(FoxtiveNtexSetup {
-        public_key: config.public_key,
-        private_key: config.private_key,
-        env_prefix: config.env_prefix.clone(),
-        auth_iss_public_key: config.auth_iss_public_key,
         allowed_origins: config.allowed_origins,
         allowed_methods: config.allowed_methods,
-        #[cfg(feature = "cache")]
-        cache_driver_setup: config.cache_driver_setup,
+        foxtive_setup: config.foxtive_setup,
     })
     .await;
-
-    let (host, port, workers) = get_server_host_config(&config.env_prefix);
 
     match callback(app_state.clone()).await {
         Ok(_) => {}
@@ -84,8 +49,14 @@ where
     }
 
     let boot = config.boot_thread;
+    let alt_routes = config.routes;
+
     web::HttpServer::new(move || {
-        let routes = boot();
+        let routes = match boot {
+            None => alt_routes.clone(),
+            Some(boot) => boot(),
+        };
+
         let app = web::App::new()
             .state(app_state.clone())
             .configure(|cfg| register_routes(cfg, routes))
@@ -111,8 +82,12 @@ where
 
         app
     })
-    .bind((host, port))?
-    .workers(workers)
+    .backlog(config.backlog)
+    .workers(config.workers)
+    .maxconn(config.max_connections)
+    .maxconnrate(config.max_connections_rate)
+    .keep_alive(config.keep_alive)
+    .bind((config.host, config.port))?
     .run()
     .await
 }

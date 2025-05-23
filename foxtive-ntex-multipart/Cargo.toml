@@ -12,7 +12,7 @@ futures = { version = "0.3", default-features = false }
 ntex-multipart = "2.0"
 ntex = { workspace = true }
 thiserror = { workspace = true }
-tokio = { version = "1.44", features = ["fs", "io-util"] }
+tokio = { version = "1.45.0", features = ["fs", "io-util"] }
 
 [dev-dependencies]
-tokio = { version = "1.44.1", features = ["test-util", "macros"] }
+tokio = { version = "1.45.0", features = ["test-util", "macros"] }

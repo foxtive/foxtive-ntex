@@ -9,11 +9,13 @@ use ntex::web::ServiceConfig;
 use ntex::{web, web::Route as NtexRoute};
 use ntex_cors::Cors;
 
+#[derive(Clone)]
 pub struct Controller {
     pub path: String,
     pub handler: fn(cfg: &mut ServiceConfig),
 }
 
+#[derive(Clone)]
 pub struct Route {
     pub prefix: String,
     pub middlewares: Vec<Middleware>,
