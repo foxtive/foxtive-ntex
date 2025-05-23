@@ -3,10 +3,6 @@ use std::fmt::{Debug, Formatter};
 
 #[derive(Clone)]
 pub struct FoxtiveNtexState {
-    /// personal access token prefix
-    #[cfg(feature = "jwt")]
-    pub jwt_secret: String,
-
     /// list of allowed origins
     pub allowed_origins: Vec<String>,
 

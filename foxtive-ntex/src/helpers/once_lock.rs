@@ -13,10 +13,6 @@ pub trait FoxtiveNtexExt {
     fn foxtive(&self) -> &FoxtiveState {
         FOXTIVE.app()
     }
-
-    fn front_url(&self, url: &str) -> String {
-        self.foxtive().frontend(url)
-    }
 }
 
 impl FoxtiveNtexExt for OnceLock<FoxtiveNtexState> {}

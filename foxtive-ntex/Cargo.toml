@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 license = "MIT"
 description = "Micro-Framework Based on Ntex"
@@ -14,17 +14,13 @@ validator = ["dep:validator"]
 database = ["foxtive/database"]
 jwt = ["foxtive/jwt", "dep:jsonwebtoken"]
 multipart = ["foxtive-ntex-multipart"]
-cache = ["foxtive/cache"]
-cache-redis = ["cache", "foxtive/cache-redis"]
-cache-in-memory = ["cache", "foxtive/cache-in-memory"]
-cache-filesystem = ["cache", "foxtive/cache-filesystem"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 thiserror = { workspace = true }
 log = { version = "0.4.27" }
-uuid = { version = "1.16.0", default-features = false }
+uuid = { version = "1.17.0", default-features = false }
 serde = { version = "1.0.219", default-features = false }
 tokio = { version = "1.45.0", default-features = false }
 chrono = { version = "0.4.41", default-features = false, features = ["serde"] }
@@ -37,7 +33,7 @@ jsonwebtoken = {version = "9.3.1", optional = true}
 validator = { version = "0.20.0", features = ["derive"], optional = true }
 strum = { version = "0.27.1", optional = true, default-features = false }
 
-foxtive = { version = "0.8.4" }
+foxtive = { version = "0.10.0" }
 foxtive-ntex-multipart = { version = "0.2.1", optional = true }
 
 [dev-dependencies]
