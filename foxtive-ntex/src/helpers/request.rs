@@ -6,7 +6,7 @@ use ntex::web::HttpRequest;
 use serde::de::DeserializeOwned;
 use serde_json::{json, Map, Value};
 
-use crate::http::extractors::client_info::ClientInfo;
+use crate::http::extractors::ClientInfo;
 
 #[allow(dead_code)]
 pub trait RequestHelper {

@@ -80,8 +80,14 @@ pub mod helpers {
                     BlockingError::Canceled => StatusCode::INTERNAL_SERVER_ERROR,
                 },
                 None => match err.downcast_ref::<HttpError>() {
-                    None => StatusCode::INTERNAL_SERVER_ERROR,
                     Some(err) => err.status_code(),
+                    None => match err.downcast_ref::<serde_json::Error>() {
+                        None => StatusCode::INTERNAL_SERVER_ERROR,
+                        Some(err) => {
+                            error!("Json-Error: {err}");
+                            StatusCode::BAD_REQUEST
+                        }
+                    },
                 },
             },
         }
@@ -111,13 +117,23 @@ pub mod helpers {
                 },
                 None => match err.downcast_ref::<HttpError>() {
                     Some(err) => crate::error::helpers::make_http_error_response(err),
-                    None => {
-                        error!("Error: {err}");
-                        make_json_response(
-                            AppMessage::InternalServerError.message(),
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                        )
-                    }
+                    None => match err.downcast_ref::<serde_json::Error>() {
+                        Some(err) => {
+                            error!("Error: {err}");
+                            // We can't send JSON error as a response, we don't know what may be leaked
+                            make_json_response(
+                                "Data processing error".to_string(),
+                                StatusCode::BAD_REQUEST,
+                            )
+                        }
+                        None => {
+                            error!("Error: {err}");
+                            make_json_response(
+                                AppMessage::InternalServerError.message(),
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                            )
+                        }
+                    },
                 },
             },
         }
