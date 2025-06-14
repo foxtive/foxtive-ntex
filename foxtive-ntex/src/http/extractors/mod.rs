@@ -12,4 +12,5 @@ pub use client_info::ClientInfo;
 pub use json_body::JsonBody;
 pub use string_body::StringBody;
 pub use de_json_body::DeJsonBody;
+#[cfg(feature = "jwt")]
 pub use jwt_auth_token::JwtAuthToken;
