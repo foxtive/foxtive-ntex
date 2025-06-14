@@ -24,7 +24,7 @@ impl JsonBody {
     ///
     /// # Example
     /// ```
-    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// use foxtive_ntex::http::extractors::JsonBody;
     ///
     /// let json_body = JsonBody::from("{\"key\": \"value\"}");
     /// assert_eq!(json_body.body(), "{\"key\": \"value\"}");
@@ -37,7 +37,7 @@ impl JsonBody {
     ///
     /// # Example
     /// ```
-    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// use foxtive_ntex::http::extractors::JsonBody;
     ///
     /// let json_body = JsonBody::from("{\"key\": \"value\"}");
     /// let json = json_body.into_body();
@@ -74,7 +74,7 @@ impl From<String> for JsonBody {
     ///
     /// # Example
     /// ```
-    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// use foxtive_ntex::http::extractors::JsonBody;
     ///
     /// let json_str = "{\"key\": \"value\"}".to_string();
     /// let json_body = JsonBody::from(json_str);
@@ -89,7 +89,7 @@ impl From<&str> for JsonBody {
     ///
     /// # Example
     /// ```
-    /// use foxtive_ntex::http::extractors::json_body::JsonBody;
+    /// use foxtive_ntex::http::extractors::JsonBody;
     ///
     /// let json_body = JsonBody::from("{\"key\": \"value\"}");
     /// ```
