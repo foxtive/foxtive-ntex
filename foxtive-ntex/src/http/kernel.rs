@@ -69,7 +69,8 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
 pub fn setup_logger() -> Logger {
     Logger::default()
         .exclude("/favicon.ico")
-        .exclude("/system/docker-health-check")
+        .exclude("/system/health-check")
+        .exclude("/api/v1/admin/health-check")
 }
 
 pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>) -> Cors {

@@ -7,4 +7,4 @@ members = [
 
 [workspace.dependencies]
 thiserror = { version = "2.0.12", default-features = false }
-ntex = { version = "2.12.4", default-features = false }
+ntex = { version = "2.13.1", default-features = false }

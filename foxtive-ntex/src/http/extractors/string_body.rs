@@ -9,7 +9,7 @@ use ntex::web::{FromRequest, HttpRequest};
 ///
 /// # Example
 /// ```
-/// use foxtive_ntex::http::extractors::string_body::StringBody;
+/// use foxtive_ntex::http::extractors::StringBody;
 ///
 /// async fn handler(body: StringBody) -> String {
 ///     format!("Received: {}", body.body())
