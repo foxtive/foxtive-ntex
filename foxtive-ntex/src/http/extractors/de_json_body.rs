@@ -5,6 +5,7 @@ use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
+use std::ops;
 
 /// A wrapper struct that holds both the raw JSON string and its deserialized form.
 ///
@@ -103,6 +104,20 @@ impl<T: DeserializeOwned, Err> FromRequest<Err> for DeJsonBody<T> {
         debug!("[json-body] {}", raw);
 
         Self::new(raw)
+    }
+}
+
+impl<T: DeserializeOwned> ops::Deref for DeJsonBody<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.1
+    }
+}
+
+impl<T: DeserializeOwned> ops::DerefMut for DeJsonBody<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.1
     }
 }
 

@@ -3,6 +3,10 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.12.0 (2025-06-25)
+* feat(DeJsonBody): impl Deref & DerefMut
+* bump(ntex): to version 2.14.0
+
 ### 0.11.0 (2025-06-14)
 * feat(extractors): add DeJsonBody
 * bump(foxtive): to version 0.10

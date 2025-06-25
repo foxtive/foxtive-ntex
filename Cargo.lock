@@ -534,14 +534,14 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "thiserror 2.0.12",
+ "thiserror",
  "tokio",
  "uuid",
 ]
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "chrono",
  "foxtive",
@@ -555,7 +555,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
- "thiserror 2.0.12",
+ "thiserror",
  "tokio",
  "uuid",
  "validator",
@@ -568,7 +568,7 @@ dependencies = [
  "futures",
  "ntex",
  "ntex-multipart",
- "thiserror 2.0.12",
+ "thiserror",
  "tokio",
 ]
 
@@ -581,7 +581,7 @@ dependencies = [
  "futures",
  "ntex",
  "ntex-multipart",
- "thiserror 2.0.12",
+ "thiserror",
  "tokio",
 ]
 
@@ -1071,9 +1071,9 @@ dependencies = [
 
 [[package]]
 name = "ntex"
-version = "2.13.1"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "720739cb54db18fab2b39a7405fc76a1d58ca69815e48c07002b78b7e100ce0e"
+checksum = "bd66840d8ec0d04588a3f87c4efeb7eeb19ada88ed683f70565f09e3a8bf294c"
 dependencies = [
  "base64",
  "bitflags",
@@ -1104,7 +1104,8 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "sha-1",
- "thiserror 2.0.12",
+ "thiserror",
+ "variadics_please",
 ]
 
 [[package]]
@@ -1179,7 +1180,7 @@ dependencies = [
  "ntex-service",
  "ntex-util",
  "pin-project-lite",
- "thiserror 2.0.12",
+ "thiserror",
 ]
 
 [[package]]
@@ -1199,9 +1200,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-io"
-version = "2.13.2"
+version = "2.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37a6e9e1ce698f78e36a49e3dd1937479f8bb8806abc36723bef6c65f9781b24"
+checksum = "381c7c8e607dc429b830bee97e1e17cd7732032c2f1de2c55c9f10e77dde7c8f"
 dependencies = [
  "bitflags",
  "log",
@@ -1240,9 +1241,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-net"
-version = "2.5.27"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70b8effbf179e2bc1658592a7ec1f40aabf7d8f43efc56a1701412ef50eaabf3"
+checksum = "c374a8552bc8a72c541ebb81852e71aec7f3c31f9d6be2f0fcf9a539a5ce6890"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -1255,7 +1256,7 @@ dependencies = [
  "ntex-service",
  "ntex-tokio",
  "ntex-util",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -1273,9 +1274,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-rt"
-version = "0.4.31"
+version = "0.4.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb40da4cf716fed71f17c8444c7121cf61118336ea79a918068a2c18bc2a2c18"
+checksum = "c30a11a3017f0bf2ea00d0bd6ba8f69e52906aa8c1f894a060341056d8b1eef8"
 dependencies = [
  "async-channel",
  "futures-timer",
@@ -1308,11 +1309,12 @@ dependencies = [
 
 [[package]]
 name = "ntex-service"
-version = "3.4.0"
+version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07867c1db27ae44cc6c796a0995c08d76aac32dffde961677a3b1950a0008a54"
+checksum = "35dc63ff1a6d11eac0f27682997e4d8c2055b151e45e10dc1d76347b49fa52b7"
 dependencies = [
  "slab",
+ "version_check",
 ]
 
 [[package]]
@@ -1359,7 +1361,7 @@ dependencies = [
  "ntex-service",
  "pin-project-lite",
  "slab",
- "thiserror 2.0.12",
+ "thiserror",
 ]
 
 [[package]]
@@ -1803,7 +1805,7 @@ checksum = "297f631f50729c8c99b84667867963997ec0b50f32b2a7dbcab828ef0541e8bb"
 dependencies = [
  "num-bigint",
  "num-traits",
- "thiserror 2.0.12",
+ "thiserror",
  "time",
 ]
 
@@ -1885,31 +1887,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.69"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
-dependencies = [
- "thiserror-impl 1.0.69",
-]
-
-[[package]]
-name = "thiserror"
 version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
 dependencies = [
- "thiserror-impl 2.0.12",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.69"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.101",
+ "thiserror-impl",
 ]
 
 [[package]]
@@ -2114,6 +2096,17 @@ dependencies = [
  "darling",
  "once_cell",
  "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
+name = "variadics_please"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b6d82be61465f97d42bd1d15bf20f3b0a3a0905018f38f9d6f6962055b0b5c"
+dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.101",
