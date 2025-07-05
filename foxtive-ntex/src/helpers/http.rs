@@ -89,12 +89,13 @@ impl QueryParams {
 
 #[allow(dead_code)]
 pub fn date_from_unsafe_input(date: &str, field_name: &str) -> Result<NaiveDateTime, AppMessage> {
-    NaiveDateTime::parse_from_str(format!("{date} 00:00:00").as_str(), "%Y-%m-%d %H:%M:%S")
-        .map_err(|e| {
+    NaiveDateTime::parse_from_str(format!("{date} 00:00:00").as_str(), "%Y-%m-%d %H:%M:%S").map_err(
+        |e| {
             AppMessage::WarningMessageString(format!(
                 "Invalid {field_name} input value({date}), please make sure it's valid date; {e}"
             ))
-        })
+        },
+    )
 }
 
 #[derive(Serialize, Deserialize, Clone)]

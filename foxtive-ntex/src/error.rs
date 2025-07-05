@@ -1,11 +1,11 @@
 use crate::error::helpers::make_http_error_response;
 use crate::http::response::anyhow::helpers::make_status_code;
-use foxtive::prelude::AppMessage;
 use foxtive::Error;
+use foxtive::prelude::AppMessage;
 #[cfg(feature = "multipart")]
 use foxtive_ntex_multipart::{ErrorMessage as MultipartErrorMessage, MultipartError};
-use ntex::http::error::PayloadError;
 use ntex::http::StatusCode;
+use ntex::http::error::PayloadError;
 use ntex::web::error::BlockingError;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::string::FromUtf8Error;
@@ -83,8 +83,8 @@ impl WebResponseError for HttpError {
 pub(crate) mod helpers {
     use crate::enums::ResponseCode;
     use crate::helpers::responder::Responder;
-    use crate::http::response::anyhow::helpers::make_response;
     use crate::http::HttpError;
+    use crate::http::response::anyhow::helpers::make_response;
     use foxtive::prelude::AppMessage;
     use log::error;
     use ntex::web::HttpResponse;
@@ -141,7 +141,10 @@ mod tests {
     #[test]
     fn test_std_error() {
         #[allow(clippy::io_other_error)]
-        let error = HttpError::Std(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Test")));
+        let error = HttpError::Std(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Test",
+        )));
         let app_error = make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }

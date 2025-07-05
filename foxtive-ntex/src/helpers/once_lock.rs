@@ -1,7 +1,7 @@
-use crate::setup::state::FoxtiveNtexState;
 use crate::FOXTIVE_NTEX;
+use crate::setup::state::FoxtiveNtexState;
 use foxtive::prelude::OnceLockHelper;
-use foxtive::{FoxtiveState, FOXTIVE};
+use foxtive::{FOXTIVE, FoxtiveState};
 #[allow(unused_imports)]
 use std::sync::{Arc, OnceLock};
 

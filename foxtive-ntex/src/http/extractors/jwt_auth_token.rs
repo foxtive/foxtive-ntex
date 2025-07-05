@@ -1,9 +1,9 @@
 use crate::error::HttpError;
 use foxtive::prelude::{AppMessage, AppResult};
-use jsonwebtoken::{decode, DecodingKey, TokenData, Validation};
+use jsonwebtoken::{DecodingKey, TokenData, Validation, decode};
 use log::{debug, error};
-use ntex::http::header;
 use ntex::http::Payload;
+use ntex::http::header;
 use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
 
@@ -98,8 +98,8 @@ impl<Err> FromRequest<Err> for JwtAuthToken {
 mod tests {
     use super::*;
     use foxtive::helpers::jwt::Algorithm;
-    use jsonwebtoken::{encode, EncodingKey, Header};
-    use ntex::http::{header, Payload};
+    use jsonwebtoken::{EncodingKey, Header, encode};
+    use ntex::http::{Payload, header};
     use ntex::web::test::TestRequest;
     use serde::{Deserialize, Serialize};
 

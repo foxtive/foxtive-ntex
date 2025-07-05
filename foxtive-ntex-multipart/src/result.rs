@@ -1,5 +1,5 @@
-use crate::file_validator::{ErrorMessage, InputError};
 use crate::FileInput;
+use crate::file_validator::{ErrorMessage, InputError};
 use std::fmt::{Display, Formatter};
 use std::io::Error;
 use thiserror::Error;

@@ -1,8 +1,8 @@
 use crate::error::HttpError;
-use foxtive::prelude::AppMessage;
 use foxtive::Error;
-use ntex::http::error::BlockingError;
+use foxtive::prelude::AppMessage;
 use ntex::http::StatusCode;
+use ntex::http::error::BlockingError;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
@@ -67,8 +67,8 @@ pub mod helpers {
     use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
     use log::error;
-    use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
+    use ntex::http::error::BlockingError;
     use ntex::web::{HttpResponse, WebResponseError};
 
     pub fn make_status_code(err: &foxtive::Error) -> StatusCode {

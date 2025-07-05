@@ -65,10 +65,10 @@ impl AppMessageExt for Result<AppMessage, BlockingError<foxtive::Error>> {
 #[cfg(test)]
 mod tests {
     use crate::http::response::ext::AppMessageExt;
-    use foxtive::prelude::AppMessage;
     use foxtive::Error;
-    use ntex::http::error::BlockingError;
+    use foxtive::prelude::AppMessage;
     use ntex::http::StatusCode;
+    use ntex::http::error::BlockingError;
     use ntex::web::WebResponseError;
 
     #[test]

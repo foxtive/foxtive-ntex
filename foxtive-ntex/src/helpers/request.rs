@@ -4,7 +4,7 @@ use ntex::http::header;
 use ntex::util::Bytes;
 use ntex::web::HttpRequest;
 use serde::de::DeserializeOwned;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 use crate::http::extractors::ClientInfo;
 

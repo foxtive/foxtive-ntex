@@ -4,9 +4,9 @@ pub use config::ServerConfig;
 #[cfg(feature = "static")]
 pub use config::StaticFileConfig;
 
-use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger, Route};
-use crate::setup::{make_ntex_state, FoxtiveNtexSetup};
 use crate::FoxtiveNtexState;
+use crate::http::kernel::{Route, ntex_default_service, register_routes, setup_cors, setup_logger};
+use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
 use foxtive::env_logger::init_env_logger;
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;

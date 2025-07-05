@@ -73,8 +73,8 @@ where
 mod tests {
     use super::*;
     use foxtive::helpers::json::JsonEmpty;
-    use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
+    use ntex::http::error::BlockingError;
     use ntex::web::WebResponseError;
     use serde_json::json;
 

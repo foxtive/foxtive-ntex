@@ -1,5 +1,5 @@
-use crate::http::kernel::Route;
 use crate::http::Method;
+use crate::http::kernel::Route;
 use foxtive::setup::FoxtiveSetup;
 use ntex::http::KeepAlive;
 use ntex::time::Seconds;

@@ -1,8 +1,8 @@
 use crate::contracts::ResponseCodeContract;
 use crate::error::HttpError;
 use crate::helpers::responder::Responder;
-use crate::http::response::ext::{OptionResultResponseExt, ResultResponseExt};
 use crate::http::HttpResult;
+use crate::http::response::ext::{OptionResultResponseExt, ResultResponseExt};
 use foxtive::prelude::{AppMessage, AppResult};
 use serde::Serialize;
 
