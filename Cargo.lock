@@ -541,11 +541,11 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "chrono",
  "foxtive",
- "foxtive-ntex-multipart 0.2.1",
+ "foxtive-ntex-multipart 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util",
  "jsonwebtoken",
  "log",
@@ -563,9 +563,7 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex-multipart"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2b66bf750aa01c92ac6c4d417be8433d74540ef7908f230c6766a74a86474cb"
+version = "0.3.0"
 dependencies = [
  "futures",
  "ntex",
@@ -577,6 +575,8 @@ dependencies = [
 [[package]]
 name = "foxtive-ntex-multipart"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b1a10c1a8feca8af78acd3f926df1a0a245c52262b115e5f920a670a46d0236"
 dependencies = [
  "futures",
  "ntex",
