@@ -27,22 +27,22 @@ impl Display for MultipartError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             MultipartError::IoError(err) => {
-                write!(f, "{}", err)
+                write!(f, "{err}")
             }
             MultipartError::NoFile => {
                 write!(f, "No file was uploaded")
             }
             MultipartError::MissingDataField(ct) => {
-                write!(f, "Data field '{}' is required", ct)
+                write!(f, "Data field '{ct}' is required")
             }
             MultipartError::NoContentType(ct) => {
-                write!(f, "Invalid content type: {}", ct)
+                write!(f, "Invalid content type: {ct}")
             }
             MultipartError::InvalidContentDisposition(err) => {
-                write!(f, "Invalid content disposition: {}", err)
+                write!(f, "Invalid content disposition: {err}")
             }
             MultipartError::NtexError(err) => {
-                write!(f, "{}", err)
+                write!(f, "{err}")
             }
             MultipartError::ValidationError(err) => {
                 let field_name = err.name.clone().replace("_", " ");
@@ -67,15 +67,13 @@ impl Display for MultipartError {
                     ErrorMessage::TooFewFiles(count) => {
                         write!(
                             f,
-                            "Too few files uploaded for field '{field_name}'. Minimum is {}",
-                            count
+                            "Too few files uploaded for field '{field_name}'. Minimum is {count}"
                         )
                     }
                     ErrorMessage::TooManyFiles(count) => {
                         write!(
                             f,
-                            "Too many files uploaded for field '{field_name}'. Maximum is {}",
-                            count
+                            "Too many files uploaded for field '{field_name}'. Maximum is {count}"
                         )
                     }
                     ErrorMessage::InvalidFileExtension(ext) => {
@@ -86,10 +84,10 @@ impl Display for MultipartError {
                         )
                     }
                     ErrorMessage::InvalidContentType(mime) => {
-                        write!(f, "Invalid mime type: {}", mime)
+                        write!(f, "Invalid mime type: {mime}")
                     }
                     ErrorMessage::MissingFileExtension(mime) => {
-                        write!(f, "Invalid file, file extension is required: {}", mime)
+                        write!(f, "Invalid file, file extension is required: {mime}")
                     }
                 }
             }

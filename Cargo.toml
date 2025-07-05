@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "foxtive-ntex",
     "foxtive-ntex-multipart"
@@ -7,4 +7,4 @@ members = [
 
 [workspace.dependencies]
 thiserror = { version = "2.0.12", default-features = false }
-ntex = { version = "2.13.1", default-features = false }
+ntex = { version = "2.14.0", default-features = false }

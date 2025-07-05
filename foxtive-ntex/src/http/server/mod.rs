@@ -43,7 +43,7 @@ where
     match callback(app_state.clone()).await {
         Ok(_) => {}
         Err(err) => {
-            error!("app bootstrap callback returned error: {:?}", err);
+            error!("app bootstrap callback returned error: {err:?}");
             panic!("boostrap failed");
         }
     }

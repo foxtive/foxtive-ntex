@@ -72,12 +72,12 @@ where
                         Ok(resp) => Ok(resp),
                         // log error and return response generated from controller
                         Err(err) => {
-                            error!("[middleware-level-error][post-exec] {:?}", err);
+                            error!("[middleware-level-error][post-exec] {err:?}");
                             Err(Error::from(ResponseError::new(err)))
                         }
                     },
                     Err(err) => {
-                        error!("[middleware-level-error][post-exec] {:?}", err);
+                        error!("[middleware-level-error][post-exec] {err:?}");
                         Err(err)
                     }
                 }

@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.3.0 (2025-06-05)
+* bump(crates): to latest versions
+
 ### 0.12.0 (2025-06-25)
 * feat(DeJsonBody): impl Deref & DerefMut
 * bump(ntex): to version 2.14.0

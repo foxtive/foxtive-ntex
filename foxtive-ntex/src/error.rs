@@ -95,16 +95,16 @@ pub(crate) mod helpers {
             HttpError::AppError(e) => make_response(e),
             #[cfg(feature = "validator")]
             HttpError::ValidationError(e) => {
-                error!("Validation Error: {}", e);
+                error!("Validation Error: {e}");
                 Responder::send_msg(e.errors(), ResponseCode::BadRequest, "Validation Error")
             }
             HttpError::PayloadError(e) => {
-                error!("Payload Error: {}", e);
+                error!("Payload Error: {e}");
                 Responder::send_msg(e.to_string(), ResponseCode::BadRequest, "Payload Error")
             }
             #[cfg(feature = "multipart")]
             HttpError::MultipartError(err) => {
-                error!("Multipart Error: {}", err);
+                error!("Multipart Error: {err}");
                 Responder::send_msg(
                     err.to_string(),
                     ResponseCode::BadRequest,
@@ -112,7 +112,7 @@ pub(crate) mod helpers {
                 )
             }
             _ => {
-                error!("Error: {}", err);
+                error!("Error: {err}");
                 make_response(&foxtive::Error::from(AppMessage::InternalServerError))
             }
         }
@@ -140,10 +140,8 @@ mod tests {
 
     #[test]
     fn test_std_error() {
-        let error = HttpError::Std(Box::new(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Test",
-        )));
+        #[allow(clippy::io_other_error)]
+        let error = HttpError::Std(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Test")));
         let app_error = make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }

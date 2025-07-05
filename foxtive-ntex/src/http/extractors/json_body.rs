@@ -55,7 +55,7 @@ impl JsonBody {
     /// Return an error if the JSON string cannot be deserialized to the target type.
     pub fn deserialize<T: DeserializeOwned>(&self) -> AppResult<T> {
         serde_json::from_str::<T>(&self.json).map_err(|e| {
-            error!("Error deserializing JSON: {:?}", e);
+            error!("Error deserializing JSON: {e:?}");
             HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string())).into_app_error()
         })
     }
@@ -113,7 +113,7 @@ impl<Err> FromRequest<Err> for JsonBody {
         }
 
         let raw = String::from_utf8(bytes.to_vec())?;
-        debug!("[json-body] {}", raw);
+        debug!("[json-body] {raw}");
         Ok(JsonBody { json: raw })
     }
 }

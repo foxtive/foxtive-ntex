@@ -37,7 +37,7 @@ impl JwtAuthToken {
         ) {
             Ok(TokenData { claims, .. }) => Ok(claims),
             Err(e) => {
-                error!("JWT decode error: {:?}", e);
+                error!("JWT decode error: {e:?}");
                 Err(
                     HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string()))
                         .into_app_error(),
@@ -86,7 +86,8 @@ impl<Err> FromRequest<Err> for JwtAuthToken {
                 .into_app_error()
             })?;
 
-        debug!("[jwt-auth-token] extracted {}", token);
+        debug!("[jwt-auth-token] extracted {token}");
+
         Ok(JwtAuthToken {
             token: token.to_string(),
         })
@@ -120,7 +121,7 @@ mod tests {
 
     fn jwt_req_with_header(token: &str) -> HttpRequest {
         TestRequest::default()
-            .header(header::AUTHORIZATION, format!("Bearer {}", token))
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
             .to_http_request()
     }
 

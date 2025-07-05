@@ -50,7 +50,7 @@ impl RequestHelper for HttpRequest {
 
     fn json<T: DeserializeOwned>(bytes: Bytes) -> AppResult<T> {
         let raw = String::from_utf8(bytes.to_vec())?;
-        debug!("[json-body]: {}", raw);
+        debug!("[json-body]: {raw}");
         Ok(serde_json::from_str::<T>(&raw)?)
     }
 
