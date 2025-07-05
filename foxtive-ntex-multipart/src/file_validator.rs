@@ -174,8 +174,7 @@ impl Validator {
                 return Err(InputError {
                     name: file.field_name.to_string(),
                     error: ErrorMessage::InvalidContentType(format!(
-                        "Invalid content type. Allowed content types are: {:?}",
-                        allowed_content_types
+                        "Invalid content type. Allowed content types are: {allowed_content_types:?}"
                     )),
                 });
             }

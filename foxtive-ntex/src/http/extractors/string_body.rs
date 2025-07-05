@@ -76,7 +76,7 @@ impl<Err> FromRequest<Err> for StringBody {
         }
 
         let raw = String::from_utf8(bytes.to_vec())?;
-        debug!("[string-body] {}", raw);
+        debug!("[string-body] {raw}");
         Ok(Self { body: raw })
     }
 }

@@ -52,7 +52,7 @@ impl Responder {
     }
 
     pub fn entity_not_found_message(entity: &str) -> Response {
-        let msg = format!("Such {} does not exists", entity);
+        let msg = format!("Such {entity} does not exists");
         Self::not_found_message(&msg)
     }
 
@@ -121,7 +121,7 @@ mod tests {
             match chunk {
                 Ok(data) => buffer.extend_from_slice(&data),
                 Err(e) => {
-                    eprintln!("Error reading body: {:?}", e);
+                    eprintln!("Error reading body: {e:?}");
                     break;
                 }
             }

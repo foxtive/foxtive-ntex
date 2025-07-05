@@ -357,9 +357,9 @@ dependencies = [
 
 [[package]]
 name = "diesel"
-version = "2.2.10"
+version = "2.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff3e1edb1f37b4953dd5176916347289ed43d7119cc2e6c7c3f7849ff44ea506"
+checksum = "a917a9209950404d5be011c81d081a2692a822f73c3d6af586f0cab5ff50f614"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -518,9 +518,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.10.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1daaab380e94534f69f6a50c1ae35a1359dbef4557a048b36a15d7e9200dcf49"
+checksum = "11284b104b2c50fefab1a4fddf15143428c0e1310215c098e53a6fb0408e4483"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -541,11 +541,11 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "chrono",
  "foxtive",
- "foxtive-ntex-multipart 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "foxtive-ntex-multipart 0.2.1",
  "futures-util",
  "jsonwebtoken",
  "log",
@@ -564,6 +564,8 @@ dependencies = [
 [[package]]
 name = "foxtive-ntex-multipart"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2b66bf750aa01c92ac6c4d417be8433d74540ef7908f230c6766a74a86474cb"
 dependencies = [
  "futures",
  "ntex",
@@ -574,9 +576,7 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex-multipart"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2b66bf750aa01c92ac6c4d417be8433d74540ef7908f230c6766a74a86474cb"
+version = "0.3.0"
 dependencies = [
  "futures",
  "ntex",
@@ -906,6 +906,17 @@ checksum = "3acae9609540aa318d1bc588455225fb2085b9ed0c4f6bd0d9d5bcd86f1a0344"
 dependencies = [
  "icu_normalizer",
  "icu_properties",
+]
+
+[[package]]
+name = "io-uring"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b86e202f00093dcba4275d4636b93ef9dd75d025ae560d2521b45ea28ab49013"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "libc",
 ]
 
 [[package]]
@@ -1948,16 +1959,18 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.45.1"
+version = "1.46.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75ef51a33ef1da925cea3e4eb122833cb377c61439ca401b770f54902b806779"
+checksum = "0cc3a2344dafbe23a245241fe8b09735b521110d30fcefbbd5feb1797ca35d17"
 dependencies = [
  "backtrace",
  "bytes",
+ "io-uring",
  "libc",
  "mio",
  "pin-project-lite",
  "signal-hook-registry",
+ "slab",
  "socket2",
  "tokio-macros",
  "windows-sys 0.52.0",

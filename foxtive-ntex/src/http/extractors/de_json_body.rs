@@ -101,7 +101,7 @@ impl<T: DeserializeOwned, Err> FromRequest<Err> for DeJsonBody<T> {
 
         let raw = String::from_utf8(bytes.to_vec())?;
 
-        debug!("[json-body] {}", raw);
+        debug!("[json-body] {raw}");
 
         Self::new(raw)
     }

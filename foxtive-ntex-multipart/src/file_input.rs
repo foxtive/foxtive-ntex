@@ -92,7 +92,7 @@ impl FileInput {
         } else if size_in_bytes >= KILOBYTE {
             format!("{:.2} KB", size_in_bytes as f64 / KILOBYTE as f64)
         } else {
-            format!("{} bytes", size_in_bytes)
+            format!("{size_in_bytes} bytes")
         }
     }
 }

@@ -88,7 +88,7 @@ mod tests {
             Ok(response) => {
                 assert_eq!(response.status(), StatusCode::OK);
             }
-            Err(e) => panic!("Expected Ok, but got Err: {:?}", e),
+            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
         }
     }
 
@@ -102,7 +102,7 @@ mod tests {
             Ok(response) => {
                 assert_eq!(response.status(), StatusCode::OK);
             }
-            Err(e) => panic!("Expected Ok, but got Err: {:?}", e),
+            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
         }
     }
 
