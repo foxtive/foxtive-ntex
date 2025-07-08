@@ -1,4 +1,3 @@
-
 #[cfg(test)]
 mod test {
     use crate::data_input::DataInput;
