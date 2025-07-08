@@ -11,6 +11,7 @@ pub enum MultipartError {
     NoFile,
     IoError(Error),
     NoContentType(String),
+    ParseError(String),
     MissingDataField(String),
     InvalidContentDisposition(String),
     NtexError(ntex_multipart::MultipartError),
@@ -37,6 +38,9 @@ impl Display for MultipartError {
             }
             MultipartError::NoContentType(ct) => {
                 write!(f, "Invalid content type: {ct}")
+            }
+            MultipartError::ParseError(pe) => {
+                write!(f, "Failed to parse post data: {pe}")
             }
             MultipartError::InvalidContentDisposition(err) => {
                 write!(f, "Invalid content disposition: {err}")
