@@ -16,7 +16,7 @@ futures = { version = "0.3.31", default-features = false }
 ntex-multipart = "2.0.0"
 ntex = { workspace = true }
 thiserror = { workspace = true }
-uuid = { version = "1.17.0", default-features = false, optional = true }
+uuid = { version = "1.17.0", default-features = false, features = ["v4"], optional = true }
 tokio = { version = "1.46.1", default-features = false, features = [
     "fs",
     "io-util",
