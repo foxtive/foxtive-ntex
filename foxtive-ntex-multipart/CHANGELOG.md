@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.3.3 (2025-06-08)
+* feat(multipart): add uuid support
+
 ### 0.3.2 (2025-06-08)
 * feat(data-input): add 'post', 'post_or', 'post_opt' methods
 
