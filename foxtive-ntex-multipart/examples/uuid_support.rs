@@ -2,11 +2,9 @@
 //!
 //! This example demonstrates how to use UUID support with the foxtive-ntex-multipart library.
 //! UUID support is provided as an optional feature that can be enabled with the "uuid" feature flag.
-
-#[cfg(feature = "uuid")]
+//!
 use uuid::Uuid;
 
-#[cfg(feature = "uuid")]
 fn main() {
     println!("🎯 UUID Support Example");
     println!("=======================");
@@ -87,30 +85,10 @@ fn main() {
     println!("  let default_id = multipart.post_or(\"missing_id\", Uuid::new_v4());");
 }
 
-#[cfg(not(feature = "uuid"))]
-fn main() {
-    println!("❌ UUID Support Example");
-    println!("========================");
-    println!();
-    println!("This example requires the 'uuid' feature to be enabled.");
-    println!("To run this example, use:");
-    println!();
-    println!("  cargo run --example uuid_support --features uuid");
-    println!();
-    println!("Or add the following to your Cargo.toml:");
-    println!();
-    println!("  [dependencies]");
-    println!("  foxtive-ntex-multipart = {{ version = \"0.3\", features = [\"uuid\"] }}");
-    println!();
-    println!("The UUID feature provides support for parsing uuid::Uuid from multipart data.");
-}
-
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "uuid")]
     use uuid::Uuid;
 
-    #[cfg(feature = "uuid")]
     #[test]
     fn test_uuid_parsing_examples() {
         // Test that our examples actually work
