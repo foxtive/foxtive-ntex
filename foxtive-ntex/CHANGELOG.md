@@ -3,14 +3,14 @@ Foxtive-Ntex changelog file
 
 ------
 
-### 0.3.2 (2025-06-08)
+### 0.13.0 (2025-06-08)
+* bump(foxtive): to version 0.13
+
+### 0.12.2 (2025-06-08)
 * bump(foxtive-ntex-multipart): to version 0.x.x
 
-### 0.3.1 (2025-06-05)
+### 0.12.1 (2025-06-05)
 * bump(foxtive-ntex-multipart): to version 0.3.0
-
-### 0.3.0 (2025-06-05)
-* bump(crates): to latest versions
 
 ### 0.12.0 (2025-06-25)
 * feat(DeJsonBody): impl Deref & DerefMut
