@@ -576,13 +576,14 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex-multipart"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "futures",
  "ntex",
  "ntex-multipart",
  "thiserror",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

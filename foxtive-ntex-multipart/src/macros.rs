@@ -82,6 +82,10 @@ impl_post_parseable_from_str!(
     std::num::NonZeroUsize
 );
 
+// Uuid Support
+#[cfg(feature = "uuid")]
+impl_post_parseable_from_str!(uuid::Uuid);
+
 /// Helper macro for users to implement PostParseableFromStr for their custom types
 ///
 /// This macro allows users to easily add support for their custom types that implement FromStr.

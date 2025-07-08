@@ -6,6 +6,8 @@ mod file_validator;
 mod macros;
 pub mod multipart;
 mod result;
+#[cfg(test)]
+mod tests;
 
 pub use contract::*;
 pub use data_input::DataInput;
