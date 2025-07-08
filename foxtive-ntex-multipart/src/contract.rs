@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use crate::{Multipart, MultipartError};
 use crate::result::MultipartResult;
+use crate::{Multipart, MultipartError};
+use std::str::FromStr;
 
 /// Trait for types that can be parsed from multipart form data
 pub trait PostParseable: Sized {
@@ -51,8 +51,6 @@ pub mod sealed {
     /// using the `impl_post_parseable_for_custom_type!` macro.
     pub trait Sealed {}
 }
-
-
 
 /// Blanket implementation of PostParseable for all types that implement PostParseableFromStr
 /// This provides the bridge between PostParseableFromStr and PostParseable

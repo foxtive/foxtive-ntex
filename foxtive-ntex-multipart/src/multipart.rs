@@ -3,6 +3,7 @@ use std::convert::Infallible;
 use std::path::Path;
 
 use crate::content_disposition::ContentDisposition;
+use crate::contract::PostParseable;
 use crate::data_input::DataInput;
 use crate::file_input::FileInput;
 use crate::file_validator::Validator;
@@ -13,7 +14,6 @@ use ntex::web::{FromRequest, HttpRequest};
 use ntex_multipart::Multipart as NtexMultipart;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use crate::contract::PostParseable;
 
 pub struct Multipart {
     multipart: NtexMultipart,

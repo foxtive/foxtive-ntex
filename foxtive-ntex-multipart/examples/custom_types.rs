@@ -100,10 +100,10 @@ impl_post_parseable_for_custom_type!(Price);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use foxtive_ntex_multipart::Multipart;
     use ntex::http::HeaderMap;
     use ntex::http::Payload;
     use ntex_multipart::Multipart as NtexMultipart;
-    use foxtive_ntex_multipart::Multipart;
 
     #[tokio::test]
     async fn test_all_custom_types() {
