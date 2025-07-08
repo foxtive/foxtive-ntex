@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.3.2 (2025-06-08)
+* feat(data-input): add 'post', 'post_or', 'post_opt' methods
+
 ### 0.3.0 (2025-06-06)
 * feat(data-input): add 'inner', 'into_inner', 'parts', 'into_parts' methods
 
