@@ -541,7 +541,7 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "chrono",
  "foxtive",
@@ -1077,9 +1077,9 @@ dependencies = [
 
 [[package]]
 name = "ntex"
-version = "2.14.0"
+version = "2.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd66840d8ec0d04588a3f87c4efeb7eeb19ada88ed683f70565f09e3a8bf294c"
+checksum = "73b4c2ed57153961bc0de13fb0be0620e051ab0887d4679bd1fe210ce63a4bd2"
 dependencies = [
  "base64",
  "bitflags",
@@ -1109,7 +1109,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sha-1",
+ "sha1",
  "thiserror",
  "variadics_please",
 ]
@@ -1148,9 +1148,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-files"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c37d129e1b93c30c12fe7f7ce3e1770ce7a9d11c5a7dcf1264a8ade8e254db41"
+checksum = "51fc73eb1d9dcda6788bfb909ad394ed4b09b0831732c39f0e9797c5753d1b8e"
 dependencies = [
  "bitflags",
  "derive_more",
@@ -1170,9 +1170,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-h2"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78d4fdf232184041fa449e113088ae59607b302823e726c45fdb87a48d7a1e7d"
+checksum = "41420ae3324234a8fbb3007dc924097400aca20de5bc90644ec6771b4c308a60"
 dependencies = [
  "bitflags",
  "fxhash",
@@ -1191,9 +1191,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-http"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa914d2065138de8d3439a6221259fa810c04ded06ddbcc7e46accc52f6365de"
+checksum = "3102673534f57dbc7fc9e7f1aac4126f353366c67518eac0a7763bb2515f0a7a"
 dependencies = [
  "futures-core",
  "fxhash",
@@ -1202,6 +1202,7 @@ dependencies = [
  "log",
  "ntex-bytes",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1768,10 +1769,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha-1"
-version = "0.10.1"
+name = "sha1"
+version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5058ada175748e33390e40e872bd0fe59a19f265d0158daa551c5a88a76009c"
+checksum = "e3bf829a2d51ab4a5ddf1352d8470c140cadc8301b2ae1789db023f01cedd6ba"
 dependencies = [
  "cfg-if",
  "cpufeatures",
