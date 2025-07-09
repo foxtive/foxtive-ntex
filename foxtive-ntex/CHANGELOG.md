@@ -6,6 +6,7 @@ Foxtive-Ntex changelog file
 ### 0.15.0 (2025-06-09)
 * bump(ntex): to version 2.15
 * bump(ntex-files): to version 2.1.0
+* bump(ntex-cors): to version 2.1.0
 
 ### 0.14.0 (2025-06-08)
 * feat(multipart): add uuid support
