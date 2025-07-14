@@ -75,6 +75,16 @@ impl ContentDisposition {
     }
 }
 
+impl From<HashMap<String, String>> for ContentDisposition {
+    fn from(value: HashMap<String, String>) -> Self {
+        ContentDisposition {
+            is_file_field: value.contains_key("filename"),
+            has_name_field: value.contains_key("name"),
+            variables: value,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

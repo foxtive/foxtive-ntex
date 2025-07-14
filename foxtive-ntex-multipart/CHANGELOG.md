@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.3.4 (2025-06-14)
+* bump(foxtive): to version 0.13.2
+
 ### 0.3.3 (2025-06-08)
 * feat(multipart): add uuid support
 
