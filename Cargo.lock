@@ -357,9 +357,9 @@ dependencies = [
 
 [[package]]
 name = "diesel"
-version = "2.2.11"
+version = "2.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a917a9209950404d5be011c81d081a2692a822f73c3d6af586f0cab5ff50f614"
+checksum = "229850a212cd9b84d4f0290ad9d294afc0ae70fccaa8949dbe8b43ffafa1e20c"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -371,9 +371,9 @@ dependencies = [
 
 [[package]]
 name = "diesel_derives"
-version = "2.2.6"
+version = "2.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52841e97814f407b895d836fa0012091dff79c6268f39ad8155d384c21ae0d26"
+checksum = "1b96984c469425cb577bf6f17121ecb3e4fe1e81de5d8f780dd372802858d756"
 dependencies = [
  "diesel_table_macro_syntax",
  "dsl_auto_type",
@@ -518,9 +518,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.13.0"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14897659e215ee5f758dc0102603ee7227006549725a7dc732b82470959f87e6"
+checksum = "660c9562a0d3db0941bac66000c02a706efa79c6d5d3c9fcd27b1e9977e81192"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -541,11 +541,11 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "chrono",
  "foxtive",
- "foxtive-ntex-multipart 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "foxtive-ntex-multipart 0.3.3",
  "futures-util",
  "jsonwebtoken",
  "log",
@@ -564,18 +564,6 @@ dependencies = [
 [[package]]
 name = "foxtive-ntex-multipart"
 version = "0.3.3"
-dependencies = [
- "futures",
- "ntex",
- "ntex-multipart",
- "thiserror",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "foxtive-ntex-multipart"
-version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f83c55c3615a0e054f688e06e5f8b105bb327facbc165e360a86805865570c"
 dependencies = [
@@ -584,6 +572,19 @@ dependencies = [
  "ntex-multipart",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "foxtive-ntex-multipart"
+version = "0.3.4"
+dependencies = [
+ "foxtive",
+ "futures",
+ "ntex",
+ "ntex-multipart",
+ "thiserror",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1248,9 +1249,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-net"
-version = "2.6.0"
+version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c374a8552bc8a72c541ebb81852e71aec7f3c31f9d6be2f0fcf9a539a5ce6890"
+checksum = "ef3d6829da93773089c38939803dd5cc348d0743b60b1b079e5529e3ee88d1fe"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -1326,9 +1327,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-tls"
-version = "2.4.1"
+version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d37bf010346f6f659d375e1366ad83ea8f4a22ac2c6216383de0e46fcf1cd7d"
+checksum = "13141967149a22b93dfaf050a87e3ec801dacc30cbb180b0000ddb6969d40d58"
 dependencies = [
  "log",
  "ntex-bytes",
