@@ -2,11 +2,11 @@ use crate::content_disposition::ContentDisposition;
 use crate::file_validator::Validator;
 use crate::result::{MultipartError, MultipartResult};
 use crate::{FileRules, Multipart};
+use foxtive::helpers::FileExtHelper;
 use ntex::http::HeaderMap;
 use ntex::util::Bytes;
 use std::collections::HashMap;
 use std::path::Path;
-use foxtive::helpers::FileExtHelper;
 
 #[derive(Debug, Default, Clone)]
 pub struct FileInput {
@@ -88,8 +88,8 @@ impl FileInput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
     use ntex::http::header::{HeaderName, HeaderValue};
+    use std::str::FromStr;
 
     // Helper function to create a basic HeaderMap with content-type
     fn create_headers_with_content_type(content_type: &str) -> HeaderMap {
@@ -149,10 +149,10 @@ mod tests {
     fn test_calculate_size_various_sizes() {
         let file_input = FileInput {
             bytes: vec![
-                Bytes::from_static(&[1; 1]),     // 1 byte
-                Bytes::from_static(&[2; 10]),    // 10 bytes
-                Bytes::from_static(&[3; 100]),   // 100 bytes
-                Bytes::from_static(&[4; 1000]),  // 1000 bytes
+                Bytes::from_static(&[1; 1]),    // 1 byte
+                Bytes::from_static(&[2; 10]),   // 10 bytes
+                Bytes::from_static(&[3; 100]),  // 100 bytes
+                Bytes::from_static(&[4; 1000]), // 1000 bytes
             ],
             ..Default::default()
         };
@@ -362,7 +362,7 @@ mod tests {
         // Add some data
         file_input.bytes = vec![
             Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xE0]), // JPEG header
-            Bytes::from_static(&[0; 1020]), // Rest of 1KB
+            Bytes::from_static(&[0; 1020]),                // Rest of 1KB
         ];
 
         // Test size calculation
