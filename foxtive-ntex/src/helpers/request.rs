@@ -27,7 +27,7 @@ pub trait RequestHelper {
 impl RequestHelper for HttpRequest {
     #[cfg(feature = "database")]
     fn db_pool(&self) -> &foxtive::database::DBPool {
-        use foxtive::prelude::OnceLockHelper;
+        use foxtive::prelude::AppStateExt;
         foxtive::FOXTIVE.app().database()
     }
 
