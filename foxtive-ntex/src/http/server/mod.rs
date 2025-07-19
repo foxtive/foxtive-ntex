@@ -7,16 +7,16 @@ pub use config::StaticFileConfig;
 use crate::FoxtiveNtexState;
 use crate::http::kernel::{Route, ntex_default_service, register_routes, setup_cors, setup_logger};
 use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
-use foxtive::env_logger::init_env_logger;
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;
 use log::error;
 use ntex::web;
 use std::future::Future;
+use foxtive::setup::logger::TracingConfig;
 
-pub fn init_bootstrap(service: &str) -> AppResult<()> {
+pub fn init_bootstrap(service: &str, config: TracingConfig) -> AppResult<()> {
+    foxtive::setup::logger::init_tracing(config)?;
     load_environment_variables(service);
-    init_env_logger();
     Ok(())
 }
 
@@ -30,7 +30,8 @@ where
     TB: FnOnce() -> Vec<Route> + Send + Copy + 'static,
 {
     if !config.has_started_bootstrap {
-        init_bootstrap(&config.app).expect("failed to init bootstrap: ");
+        let t_config = config.tracing_config.unwrap_or_default();
+        init_bootstrap(&config.app, t_config).expect("failed to init bootstrap: ");
     }
 
     let app_state = make_ntex_state(FoxtiveNtexSetup {
