@@ -7,6 +7,6 @@ members = [
 
 [workspace.dependencies]
 thiserror = { version = "2.0.12", default-features = false }
-ntex = { version = "2.15.0", default-features = false }
-foxtive = { version = "0.14.0", default-features = false }
+ntex = { version = "2.15.1", default-features = false }
+foxtive = { version = "0.15.0", default-features = false }
 #

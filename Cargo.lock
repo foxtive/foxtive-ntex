@@ -539,9 +539,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0dd2f33e12c2c7c1b2461d1c477b2521ad37fd7f7778907cc076efc1c53211d"
+checksum = "e5c9098c4d1137598778871bb48bd81c9620f264468dca571ec86f55475627d3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -562,10 +562,10 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "chrono",
- "foxtive 0.14.0",
+ "foxtive 0.15.0",
  "foxtive-ntex-multipart 0.3.4",
  "futures-util",
  "jsonwebtoken",
@@ -598,9 +598,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex-multipart"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
- "foxtive 0.14.0",
+ "foxtive 0.15.0",
  "futures",
  "ntex",
  "ntex-multipart",
@@ -1115,9 +1115,9 @@ dependencies = [
 
 [[package]]
 name = "ntex"
-version = "2.15.0"
+version = "2.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73b4c2ed57153961bc0de13fb0be0620e051ab0887d4679bd1fe210ce63a4bd2"
+checksum = "19dd8e0ee5031fa0de9e1c9da2ba48990ed9c9b230c2987a14ea95be4af6add6"
 dependencies = [
  "base64",
  "bitflags",
@@ -1245,9 +1245,9 @@ dependencies = [
 
 [[package]]
 name = "ntex-io"
-version = "2.13.3"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "381c7c8e607dc429b830bee97e1e17cd7732032c2f1de2c55c9f10e77dde7c8f"
+checksum = "55eb13ef2e89f799ef0395911b6365052cab4cea65a7d2ef870e39732bf346b2"
 dependencies = [
  "bitflags",
  "log",
@@ -1349,7 +1349,7 @@ dependencies = [
  "oneshot",
  "polling",
  "signal-hook",
- "socket2",
+ "socket2 0.5.10",
 ]
 
 [[package]]
@@ -1815,9 +1815,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.141"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30b9eff21ebe718216c6ec64e1d9ac57087aad11efc64e32002bce4a0d4c03d3"
+checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
 dependencies = [
  "itoa",
  "memchr",
@@ -1917,6 +1917,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "socket2"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "233504af464074f9d066d7b5416c5f9b894a5862a6506e306f7b816cdd6f1807"
+dependencies = [
+ "libc",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1930,9 +1940,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 
 [[package]]
 name = "syn"
@@ -2039,9 +2049,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.46.1"
+version = "1.47.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cc3a2344dafbe23a245241fe8b09735b521110d30fcefbbd5feb1797ca35d17"
+checksum = "89e49afdadebb872d3145a5638b59eb0691ea23e46ca484037cfab3b76b95038"
 dependencies = [
  "backtrace",
  "bytes",
@@ -2051,9 +2061,9 @@ dependencies = [
  "pin-project-lite",
  "signal-hook-registry",
  "slab",
- "socket2",
+ "socket2 0.6.0",
  "tokio-macros",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

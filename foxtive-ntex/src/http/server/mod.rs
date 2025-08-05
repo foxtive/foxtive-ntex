@@ -12,10 +12,10 @@ use foxtive::setup::load_environment_variables;
 use log::error;
 use ntex::web;
 use std::future::Future;
-use foxtive::setup::logger::TracingConfig;
+use foxtive::setup::trace::Tracing;
 
-pub fn init_bootstrap(service: &str, config: TracingConfig) -> AppResult<()> {
-    foxtive::setup::logger::init_tracing(config)?;
+pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
+    foxtive::setup::trace::init_tracing(config)?;
     load_environment_variables(service);
     Ok(())
 }
@@ -30,7 +30,7 @@ where
     TB: FnOnce() -> Vec<Route> + Send + Copy + 'static,
 {
     if !config.has_started_bootstrap {
-        let t_config = config.tracing_config.unwrap_or_default();
+        let t_config = config.tracing.unwrap_or_default();
         init_bootstrap(&config.app, t_config).expect("failed to init bootstrap: ");
     }
 

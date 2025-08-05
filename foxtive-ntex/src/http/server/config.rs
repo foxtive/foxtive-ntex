@@ -1,7 +1,7 @@
 use crate::http::Method;
 use crate::http::kernel::Route;
 use foxtive::setup::FoxtiveSetup;
-use foxtive::setup::logger::TracingConfig;
+use foxtive::setup::trace::Tracing;
 use ntex::http::KeepAlive;
 use ntex::time::Seconds;
 
@@ -34,7 +34,7 @@ where
     pub(crate) app: String,
     pub(crate) foxtive_setup: FoxtiveSetup,
 
-    pub(crate) tracing_config: Option<TracingConfig>,
+    pub(crate) tracing: Option<Tracing>,
 
     #[cfg(feature = "static")]
     pub(crate) static_config: StaticFileConfig,
@@ -77,7 +77,7 @@ where
             allowed_origins: vec![],
             allowed_methods: vec![],
             boot_thread: None,
-            tracing_config: None,
+            tracing: None,
         }
     }
 
@@ -96,8 +96,8 @@ where
         self
     }
 
-    pub fn tracing_config(mut self, config: TracingConfig) -> Self {
-        self.tracing_config = Some(config);
+    pub fn tracing(mut self, config: Tracing) -> Self {
+        self.tracing = Some(config);
         self
     }
 
