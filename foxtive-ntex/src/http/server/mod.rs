@@ -9,10 +9,10 @@ use crate::http::kernel::{Route, ntex_default_service, register_routes, setup_co
 use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;
+use foxtive::setup::trace::Tracing;
 use log::error;
 use ntex::web;
 use std::future::Future;
-use foxtive::setup::trace::Tracing;
 
 pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
     foxtive::setup::trace::init_tracing(config)?;
