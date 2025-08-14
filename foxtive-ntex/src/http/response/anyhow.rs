@@ -66,7 +66,7 @@ pub mod helpers {
     use crate::helpers::responder::Responder;
     use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
-    use log::error;
+    use tracing::error;
     use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
     use ntex::web::{HttpResponse, WebResponseError};

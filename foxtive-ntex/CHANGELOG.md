@@ -3,6 +3,11 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.18.0 (2025-08-14)
+* refactor(log): migrate to 'tracing' 
+* bump(foxtive): to version 0.16
+* fix(setup): avoid panics
+
 ### 0.17.0 (2025-08-05)
 * bump(foxtive): to version 0.15
 

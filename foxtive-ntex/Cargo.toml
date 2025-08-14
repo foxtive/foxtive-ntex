@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2024"
 license = "MIT"
 description = "Micro-Framework Based on Ntex"
@@ -19,8 +19,8 @@ multipart = ["foxtive-ntex-multipart"]
 
 [dependencies]
 thiserror = { workspace = true }
-log = { version = "0.4.27" }
-uuid = { version = "1.17.0", default-features = false }
+tracing = { version = "0.1.41" }
+uuid = { version = "1.18.0", default-features = false }
 serde = { version = "1.0.219", default-features = false }
 tokio = { version = "1.47.1", default-features = false }
 chrono = { version = "0.4.41", default-features = false, features = ["serde"] }

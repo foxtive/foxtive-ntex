@@ -1,5 +1,5 @@
 use foxtive::prelude::AppResult;
-use log::debug;
+use tracing::debug;
 use ntex::http::header;
 use ntex::util::Bytes;
 use ntex::web::HttpRequest;
