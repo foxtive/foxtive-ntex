@@ -1,6 +1,6 @@
 use crate::http::middlewares::Middleware;
 use crate::http::response::anyhow::ResponseError;
-use log::{debug, error, info};
+use tracing::{debug, error, info};
 use ntex::service::{Middleware as ServiceMiddleware, Service, ServiceCtx};
 use ntex::web;
 use ntex::web::{Error, WebRequest};

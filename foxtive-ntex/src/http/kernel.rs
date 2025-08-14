@@ -2,7 +2,7 @@ use crate::enums::ResponseCode;
 use crate::helpers::responder::Responder;
 use crate::http::Method;
 use crate::http::middlewares::Middleware;
-use log::info;
+use tracing::info;
 use ntex::http::header;
 use ntex::web::ServiceConfig;
 use ntex::web::middleware::Logger;
@@ -23,12 +23,12 @@ pub struct Route {
 }
 
 pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
-    log::debug!("discovering routes...");
+    tracing::debug!("discovering routes...");
 
     for route in routes {
         for controller in &route.controllers {
             let path = route.prefix.as_str().to_owned() + controller.path.as_str();
-            log::debug!(
+            tracing::debug!(
                 "route group: {}",
                 if path.is_empty() { "/" } else { path.as_str() }
             );
@@ -63,7 +63,7 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
         }
     }
 
-    log::debug!("route discovery finished :)");
+    tracing::debug!("route discovery finished :)");
 }
 
 pub fn setup_logger() -> Logger {

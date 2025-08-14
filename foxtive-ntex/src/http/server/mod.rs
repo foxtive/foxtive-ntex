@@ -4,15 +4,16 @@ pub use config::ServerConfig;
 #[cfg(feature = "static")]
 pub use config::StaticFileConfig;
 
+use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger, Route};
+use crate::setup::{make_ntex_state, FoxtiveNtexSetup};
 use crate::FoxtiveNtexState;
-use crate::http::kernel::{Route, ntex_default_service, register_routes, setup_cors, setup_logger};
-use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;
 use foxtive::setup::trace::Tracing;
-use log::error;
+use foxtive::Error;
 use ntex::web;
 use std::future::Future;
+use tracing::{debug, error};
 
 pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
     foxtive::setup::trace::init_tracing(config)?;
@@ -23,7 +24,7 @@ pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
 pub async fn start_ntex_server<Callback, Fut, TB>(
     config: ServerConfig<TB>,
     callback: Callback,
-) -> std::io::Result<()>
+) -> AppResult<()>
 where
     Callback: FnOnce(FoxtiveNtexState) -> Fut + Copy + Send + 'static,
     Fut: Future<Output = AppResult<()>> + Send + 'static,
@@ -31,16 +32,19 @@ where
 {
     if !config.has_started_bootstrap {
         let t_config = config.tracing.unwrap_or_default();
+        debug!("Starting bootstrap");
         init_bootstrap(&config.app, t_config).expect("failed to init bootstrap: ");
     }
 
+    debug!("Creating Foxtive-Ntex state");
     let app_state = make_ntex_state(FoxtiveNtexSetup {
         allowed_origins: config.allowed_origins,
         allowed_methods: config.allowed_methods,
         foxtive_setup: config.foxtive_setup,
     })
-    .await;
+    .await?;
 
+    debug!("Executing app bootstrap callback");
     match callback(app_state.clone()).await {
         Ok(_) => {}
         Err(err) => {
@@ -91,4 +95,5 @@ where
     .bind((config.host, config.port))?
     .run()
     .await
+    .map_err(Error::from)
 }

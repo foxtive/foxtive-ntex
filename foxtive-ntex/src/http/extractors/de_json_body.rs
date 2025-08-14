@@ -1,6 +1,6 @@
 use crate::error::HttpError;
 use foxtive::prelude::AppMessage;
-use log::debug;
+use tracing::debug;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};

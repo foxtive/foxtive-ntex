@@ -133,22 +133,22 @@ impl Validator {
         }
 
         // Validate file size
-        if let Some(min_size) = rule.min_size {
-            if file.size < min_size {
-                return Err(InputError {
-                    name: file.field_name.to_string(),
-                    error: ErrorMessage::FileTooSmall(min_size),
-                });
-            }
+        if let Some(min_size) = rule.min_size
+            && file.size < min_size
+        {
+            return Err(InputError {
+                name: file.field_name.to_string(),
+                error: ErrorMessage::FileTooSmall(min_size),
+            });
         }
 
-        if let Some(max_size) = rule.max_size {
-            if file.size > max_size {
-                return Err(InputError {
-                    name: file.field_name.to_string(),
-                    error: ErrorMessage::FileTooLarge(max_size),
-                });
-            }
+        if let Some(max_size) = rule.max_size
+            && file.size > max_size
+        {
+            return Err(InputError {
+                name: file.field_name.to_string(),
+                error: ErrorMessage::FileTooLarge(max_size),
+            });
         }
 
         // Validate file extension
@@ -169,15 +169,15 @@ impl Validator {
         }
 
         // Validate content type
-        if let Some(allowed_content_types) = &rule.allowed_content_types {
-            if !allowed_content_types.contains(&file.content_type.to_lowercase()) {
-                return Err(InputError {
-                    name: file.field_name.to_string(),
-                    error: ErrorMessage::InvalidContentType(format!(
-                        "Invalid content type. Allowed content types are: {allowed_content_types:?}"
-                    )),
-                });
-            }
+        if let Some(allowed_content_types) = &rule.allowed_content_types
+            && !allowed_content_types.contains(&file.content_type.to_lowercase())
+        {
+            return Err(InputError {
+                name: file.field_name.to_string(),
+                error: ErrorMessage::InvalidContentType(format!(
+                    "Invalid content type. Allowed content types are: {allowed_content_types:?}"
+                )),
+            });
         }
 
         Ok(())
