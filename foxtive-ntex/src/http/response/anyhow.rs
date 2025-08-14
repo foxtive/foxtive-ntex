@@ -66,10 +66,10 @@ pub mod helpers {
     use crate::helpers::responder::Responder;
     use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
-    use tracing::error;
     use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
     use ntex::web::{HttpResponse, WebResponseError};
+    use tracing::error;
 
     pub fn make_status_code(err: &foxtive::Error) -> StatusCode {
         match err.downcast_ref::<AppMessage>() {

@@ -86,8 +86,8 @@ pub(crate) mod helpers {
     use crate::http::HttpError;
     use crate::http::response::anyhow::helpers::make_response;
     use foxtive::prelude::AppMessage;
-    use tracing::error;
     use ntex::web::HttpResponse;
+    use tracing::error;
 
     pub(crate) fn make_http_error_response(err: &HttpError) -> HttpResponse {
         match err {

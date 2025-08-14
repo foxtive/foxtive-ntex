@@ -2,12 +2,12 @@ use crate::enums::ResponseCode;
 use crate::helpers::responder::Responder;
 use crate::http::Method;
 use crate::http::middlewares::Middleware;
-use tracing::info;
 use ntex::http::header;
 use ntex::web::ServiceConfig;
 use ntex::web::middleware::Logger;
 use ntex::{web, web::Route as NtexRoute};
 use ntex_cors::Cors;
+use tracing::info;
 
 #[derive(Clone)]
 pub struct Controller {

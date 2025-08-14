@@ -1,5 +1,5 @@
-use crate::http::Method;
 use crate::FOXTIVE_NTEX;
+use crate::http::Method;
 use foxtive::prelude::AppMessage;
 use foxtive::results::AppResult;
 use foxtive::setup::FoxtiveSetup;
