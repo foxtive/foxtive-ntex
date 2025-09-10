@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.20.0 (2025-09-10)
+* bump(ntex-rs): to version 2.16.0
+
 ### 0.19.0 (2025-08-14)
 * bump(foxtive): to version 0.17
 
