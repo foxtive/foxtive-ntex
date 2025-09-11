@@ -6,7 +6,7 @@ mod error;
 pub mod helpers;
 pub mod http;
 mod setup;
-mod ext;
+pub mod ext;
 
 pub use setup::state::FoxtiveNtexState;
 
