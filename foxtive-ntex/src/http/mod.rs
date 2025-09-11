@@ -4,15 +4,15 @@ use ntex::http::error::BlockingError;
 pub mod extractors;
 pub mod kernel;
 pub mod middlewares;
+pub mod responder;
 pub mod response;
 pub mod server;
-pub mod responder;
 
 use crate::enums::ResponseCode;
-use responder::Responder;
 pub use ntex::http::Method;
 use ntex::web::ServiceConfig;
 pub use ntex_cors::Cors;
+use responder::Responder;
 
 pub use crate::error::HttpError;
 

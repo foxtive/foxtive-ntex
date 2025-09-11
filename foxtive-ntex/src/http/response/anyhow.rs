@@ -63,8 +63,8 @@ impl From<BlockingError<foxtive::Error>> for ResponseError {
 pub mod helpers {
     use crate::contracts::ResponseCodeContract;
     use crate::enums::ResponseCode;
-    use crate::http::responder::Responder;
     use crate::http::HttpError;
+    use crate::http::responder::Responder;
     use foxtive::prelude::AppMessage;
     use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;

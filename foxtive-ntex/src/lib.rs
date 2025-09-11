@@ -3,10 +3,10 @@ use std::sync::OnceLock;
 pub mod contracts;
 pub mod enums;
 mod error;
+mod ext;
 pub mod helpers;
 pub mod http;
 mod setup;
-mod ext;
 
 pub use setup::state::FoxtiveNtexState;
 

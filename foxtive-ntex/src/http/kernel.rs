@@ -1,7 +1,7 @@
 use crate::enums::ResponseCode;
-use crate::http::responder::Responder;
 use crate::http::Method;
 use crate::http::middlewares::Middleware;
+use crate::http::responder::Responder;
 use ntex::http::header;
 use ntex::web::ServiceConfig;
 use ntex::web::middleware::Logger;
