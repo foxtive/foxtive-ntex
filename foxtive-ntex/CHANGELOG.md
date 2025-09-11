@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.21.1 (2025-09-11)
+* fix(ext): module should be public
+
 ### 0.21.0 (2025-09-11)
 * refactor(responder): move impl to http module
 * refactor(app-state): move impl to "ext" module
