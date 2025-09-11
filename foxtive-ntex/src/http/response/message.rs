@@ -1,6 +1,6 @@
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
-use crate::helpers::responder::Responder;
+use crate::http::responder::Responder;
 use crate::http::response::ext::AppMessageExt;
 use crate::http::{HttpError, HttpResult, IntoHttpResult};
 use foxtive::prelude::AppMessage;

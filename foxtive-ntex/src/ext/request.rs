@@ -9,7 +9,7 @@ use serde_json::{Map, Value, json};
 use crate::http::extractors::ClientInfo;
 
 #[allow(dead_code)]
-pub trait RequestHelper {
+pub trait RequestExt {
     #[cfg(feature = "database")]
     fn db_pool(&self) -> &foxtive::database::DBPool;
 
@@ -24,7 +24,7 @@ pub trait RequestHelper {
     fn user_agent(&self) -> Option<String>;
 }
 
-impl RequestHelper for HttpRequest {
+impl RequestExt for HttpRequest {
     #[cfg(feature = "database")]
     fn db_pool(&self) -> &foxtive::database::DBPool {
         use foxtive::prelude::AppStateExt;

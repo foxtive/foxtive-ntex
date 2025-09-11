@@ -1,5 +1,5 @@
 use crate::error::HttpError;
-use crate::helpers::request::RequestHelper;
+use crate::ext::request::RequestExt;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
 

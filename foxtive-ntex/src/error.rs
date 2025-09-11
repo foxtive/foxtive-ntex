@@ -82,7 +82,7 @@ impl WebResponseError for HttpError {
 
 pub(crate) mod helpers {
     use crate::enums::ResponseCode;
-    use crate::helpers::responder::Responder;
+    use crate::http::responder::Responder;
     use crate::http::HttpError;
     use crate::http::response::anyhow::helpers::make_response;
     use foxtive::prelude::AppMessage;

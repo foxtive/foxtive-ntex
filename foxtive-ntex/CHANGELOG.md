@@ -3,6 +3,12 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.21.0 (2025-09-11)
+* refactor(responder): move impl to http module
+* refactor(app-state): move impl to "ext" module
+* refactor(request): move impl to "ext" module
+* refactor(http): remove unneeded code in favour of 
+
 ### 0.20.0 (2025-09-10)
 * bump(ntex-rs): to version 2.16.0
 

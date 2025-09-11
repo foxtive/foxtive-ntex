@@ -1,5 +1,5 @@
 use crate::enums::ResponseCode;
-use crate::helpers::responder::Responder;
+use crate::http::responder::Responder;
 use crate::http::Method;
 use crate::http::middlewares::Middleware;
 use tracing::info;
