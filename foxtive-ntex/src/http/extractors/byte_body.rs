@@ -1,9 +1,9 @@
 use crate::error::HttpError;
 use foxtive::prelude::{AppMessage, AppResult};
-use tracing::debug;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
+use tracing::debug;
 
 /// Extractor for reading the request body as raw bytes (Vec<u8>).
 ///

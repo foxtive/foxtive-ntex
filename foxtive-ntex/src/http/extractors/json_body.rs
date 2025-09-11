@@ -1,10 +1,10 @@
 use crate::error::HttpError;
 use foxtive::prelude::{AppMessage, AppResult};
-use tracing::{debug, error};
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
+use tracing::{debug, error};
 
 pub struct JsonBody {
     json: String,

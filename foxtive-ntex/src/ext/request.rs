@@ -1,10 +1,10 @@
 use foxtive::prelude::AppResult;
-use tracing::debug;
 use ntex::http::header;
 use ntex::util::Bytes;
 use ntex::web::HttpRequest;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
+use tracing::debug;
 
 use crate::http::extractors::ClientInfo;
 
