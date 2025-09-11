@@ -6,9 +6,10 @@ mod error;
 pub mod helpers;
 pub mod http;
 mod setup;
+mod ext;
 
 pub use setup::state::FoxtiveNtexState;
 
 pub static FOXTIVE_NTEX: OnceLock<FoxtiveNtexState> = OnceLock::new();
 
-pub use crate::helpers::once_lock::FoxtiveNtexExt;
+pub use ext::app_state::FoxtiveNtexExt;

@@ -6,9 +6,10 @@ pub mod kernel;
 pub mod middlewares;
 pub mod response;
 pub mod server;
+pub mod responder;
 
 use crate::enums::ResponseCode;
-use crate::helpers::responder::Responder;
+use responder::Responder;
 pub use ntex::http::Method;
 use ntex::web::ServiceConfig;
 pub use ntex_cors::Cors;
