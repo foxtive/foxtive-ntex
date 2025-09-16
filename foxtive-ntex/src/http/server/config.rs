@@ -61,10 +61,7 @@ pub struct StaticFileConfig {
 /// let config = JsonConfig::default();
 ///
 /// // Custom size limit
-/// let config = JsonConfig {
-///     limit: 1024 * 1024, // 1 MB
-///     content_type: None,
-/// };
+/// let config = JsonConfig::default().limit(1024 * 1024); // 1 MB
 /// ```
 #[derive(Clone)]
 pub struct JsonConfig {
