@@ -1,7 +1,7 @@
-use crate::http::kernel::Route;
 use crate::http::Method;
-use foxtive::setup::trace::Tracing;
+use crate::http::kernel::Route;
 use foxtive::setup::FoxtiveSetup;
+use foxtive::setup::trace::Tracing;
 use ntex::http::KeepAlive;
 use ntex::time::Seconds;
 use std::sync::Arc;

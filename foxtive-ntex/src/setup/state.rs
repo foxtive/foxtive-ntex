@@ -1,6 +1,6 @@
 use crate::http::Method;
-use std::fmt::{Debug, Formatter};
 use crate::http::server::JsonConfig;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Clone)]
 pub struct FoxtiveNtexState {

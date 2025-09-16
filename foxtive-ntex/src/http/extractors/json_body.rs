@@ -1,5 +1,5 @@
 use crate::error::HttpError;
-use crate::{FoxtiveNtexExt, FOXTIVE_NTEX};
+use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::Payload;
 use ntex::util::BytesMut;
