@@ -3,18 +3,18 @@ use crate::http::response::anyhow::ResponseError;
 use ntex::service::{Middleware as ServiceMiddleware, Service, ServiceCtx};
 use ntex::web;
 use ntex::web::{Error, WebRequest};
-use std::sync::Arc;
+use std::rc::Rc;
 use tracing::{debug, error, info};
 
 #[derive(Clone)]
 pub struct MiddlewareExecutor {
-    handler: Arc<Middleware>,
+    handler: Rc<Middleware>,
 }
 
 impl MiddlewareExecutor {
     pub fn new(handler: Middleware) -> Self {
         MiddlewareExecutor {
-            handler: Arc::new(handler),
+            handler: Rc::new(handler),
         }
     }
 }
@@ -32,7 +32,7 @@ impl<S> ServiceMiddleware<S> for MiddlewareExecutor {
 
 pub struct ExecutorMiddlewareInternal<S> {
     service: S,
-    middleware: Arc<Middleware>,
+    middleware: Rc<Middleware>,
 }
 
 impl<S, Err> Service<web::WebRequest<Err>> for ExecutorMiddlewareInternal<S>
@@ -55,7 +55,7 @@ where
 
         match *self.middleware {
             // execute before calling handler
-            Middleware::Before(ref mid) => match mid(req).await {
+            Middleware::Before(ref mid) => match mid.handle(req).await {
                 Ok(req) => {
                     let request = WebRequest::from_parts(req, payload).unwrap();
                     debug!("calling http controller -> method...");
@@ -68,14 +68,16 @@ where
             Middleware::After(ref mid) => {
                 let request = WebRequest::from_parts(req, payload).unwrap();
                 match ctx.call(&self.service, request).await {
-                    Ok(resp) => match mid(resp).await {
-                        Ok(resp) => Ok(resp),
-                        // log error and return response generated from controller
-                        Err(err) => {
-                            error!("[middleware-level-error][post-exec] {err:?}");
-                            Err(Error::from(ResponseError::new(err)))
+                    Ok(resp) => {
+                        match mid.handle(resp).await {
+                            Ok(resp) => Ok(resp),
+                            // log error and return response generated from controller
+                            Err(err) => {
+                                error!("[middleware-level-error][post-exec] {err:?}");
+                                Err(Error::from(ResponseError::new(err)))
+                            }
                         }
-                    },
+                    }
                     Err(err) => {
                         error!("[middleware-level-error][post-exec] {err:?}");
                         Err(err)

@@ -1,20 +1,81 @@
-use crate::http::Method;
 use crate::http::kernel::Route;
-use foxtive::setup::FoxtiveSetup;
+use crate::http::Method;
 use foxtive::setup::trace::Tracing;
+use foxtive::setup::FoxtiveSetup;
 use ntex::http::KeepAlive;
 use ntex::time::Seconds;
+use std::sync::Arc;
 
+/// Configuration for serving static files.
+///
+/// This struct defines the mapping between URL paths and filesystem directories
+/// for static file serving. Only available when the `static` feature is enabled.
+///
+/// # Example
+/// ```rust
+/// use foxtive_ntex::http::StaticFileConfig;
+///
+/// let config = StaticFileConfig {
+///     path: "/assets".to_string(),
+///     dir: "./public".to_string(),
+/// };
+///
+/// // This would serve files from "./public" directory at "/assets/*" URL path
+/// // e.g., "./public/style.css" would be accessible at "/assets/style.css"
+/// ```
+///
+/// # Security Notes
+/// - The `dir` path should be carefully validated to prevent directory traversal attacks
+/// - Consider using absolute paths or canonicalized paths for the `dir` field
+/// - Ensure proper file permissions are set on the served directory
 #[cfg(feature = "static")]
 pub struct StaticFileConfig {
+    /// The URL path prefix where static files will be served.
+    ///
+    /// This defines the base route under which static files are accessible.
+    /// Should start with "/" (e.g., "/static", "/assets", "/public").
     pub path: String,
+
+    /// The filesystem directory path containing the static files to serve.
+    ///
+    /// This can be either a relative path (relative to the application's working directory)
+    /// or an absolute path. All files within this directory and its subdirectories
+    /// will be served under the configured URL path.
     pub dir: String,
 }
 
-pub struct ServerConfig<TB>
-where
-    TB: FnOnce() -> Vec<Route> + Send + Copy + 'static,
-{
+/// Configuration for JSON request body parsing.
+///
+/// This struct controls how JSON payloads are processed, including size limits
+/// and content-type validation.
+///
+/// # Default Settings
+/// - Maximum body size: 512,000 bytes (500 KB)
+/// - Content-type validation: None (accepts any content-type)
+///
+/// # Example
+/// ```rust
+/// use foxtive_ntex::http::JsonConfig;
+///
+/// // Use default configuration (50 KB limit)
+/// let config = JsonConfig::default();
+///
+/// // Custom size limit
+/// let config = JsonConfig {
+///     limit: 1024 * 1024, // 1 MB
+///     content_type: None,
+/// };
+/// ```
+#[derive(Clone)]
+pub struct JsonConfig {
+    /// Maximum allowed size for JSON request bodies in bytes.
+    ///
+    /// Requests exceeding this limit will be rejected with a payload too large error.
+    /// Default: 51,200 bytes (50 KB)
+    pub(crate) limit: usize,
+}
+
+pub struct ServerConfig {
     pub(crate) host: String,
     pub(crate) port: u16,
     pub(crate) workers: usize,
@@ -31,6 +92,8 @@ where
 
     pub(crate) backlog: i32,
 
+    pub(crate) json_config: Option<JsonConfig>,
+
     pub(crate) app: String,
     pub(crate) foxtive_setup: FoxtiveSetup,
 
@@ -42,22 +105,17 @@ where
     /// whether the app bootstrap has started
     pub(crate) has_started_bootstrap: bool,
 
-    pub(crate) routes: Vec<Route>,
-
     /// list of allowed CORS origins
     pub(crate) allowed_origins: Vec<String>,
 
     /// list of allowed CORS origins
     pub(crate) allowed_methods: Vec<Method>,
 
-    pub(crate) boot_thread: Option<TB>,
+    pub(crate) boot_thread: Arc<dyn Fn() -> Vec<Route> + Send + Sync>,
 }
 
-impl<TB> ServerConfig<TB>
-where
-    TB: FnOnce() -> Vec<Route> + Send + Copy + 'static,
-{
-    pub fn create(host: &str, port: u16, setup: FoxtiveSetup) -> ServerConfig<TB> {
+impl ServerConfig {
+    pub fn create(host: &str, port: u16, setup: FoxtiveSetup) -> ServerConfig {
         ServerConfig {
             host: host.to_string(),
             port,
@@ -73,11 +131,11 @@ where
             #[cfg(feature = "static")]
             static_config: StaticFileConfig::default(),
             has_started_bootstrap: false,
-            routes: vec![],
             allowed_origins: vec![],
             allowed_methods: vec![],
-            boot_thread: None,
+            boot_thread: Arc::new(Vec::new),
             tracing: None,
+            json_config: None,
         }
     }
 
@@ -87,7 +145,7 @@ where
         port: u16,
         setup: FoxtiveSetup,
         config: StaticFileConfig,
-    ) -> ServerConfig<TB> {
+    ) -> ServerConfig {
         Self::create(host, port, setup).static_config(config)
     }
 
@@ -197,13 +255,26 @@ where
         self
     }
 
-    pub fn boot_thread(mut self, boot_thread: TB) -> Self {
-        self.boot_thread = Some(boot_thread);
+    pub fn boot_thread(mut self, boot_thread: Arc<dyn Fn() -> Vec<Route> + Send + Sync>) -> Self {
+        self.boot_thread = boot_thread;
         self
     }
 
     pub fn has_started_bootstrap(mut self, has_started_bootstrap: bool) -> Self {
         self.has_started_bootstrap = has_started_bootstrap;
+        self
+    }
+
+    pub fn json_config(mut self, json_config: JsonConfig) -> Self {
+        self.json_config = Some(json_config);
+        self
+    }
+}
+
+impl JsonConfig {
+    /// Change max size of payload. By default max size is 50Kb
+    pub fn limit(mut self, limit: usize) -> Self {
+        self.limit = limit;
         self
     }
 }
@@ -214,6 +285,14 @@ impl Default for StaticFileConfig {
         Self {
             path: "static".to_string(),
             dir: "./static".to_string(),
+        }
+    }
+}
+
+impl Default for JsonConfig {
+    fn default() -> Self {
+        JsonConfig {
+            limit: 51_000, // 50 KB
         }
     }
 }

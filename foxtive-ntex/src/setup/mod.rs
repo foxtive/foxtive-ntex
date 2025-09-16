@@ -1,5 +1,6 @@
-use crate::FOXTIVE_NTEX;
+use crate::http::server::JsonConfig;
 use crate::http::Method;
+use crate::FOXTIVE_NTEX;
 use foxtive::prelude::AppMessage;
 use foxtive::results::AppResult;
 use foxtive::setup::FoxtiveSetup;
@@ -12,6 +13,7 @@ pub struct FoxtiveNtexSetup {
     pub allowed_origins: Vec<String>,
     pub allowed_methods: Vec<Method>,
     pub foxtive_setup: FoxtiveSetup,
+    pub json_config: JsonConfig,
 }
 
 pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> AppResult<FoxtiveNtexState> {
@@ -31,5 +33,6 @@ async fn create_app_state(setup: &FoxtiveNtexSetup) -> FoxtiveNtexState {
     FoxtiveNtexState {
         allowed_origins: setup.allowed_origins.clone(),
         allowed_methods: setup.allowed_methods.clone(),
+        json_config: setup.json_config.clone(),
     }
 }
