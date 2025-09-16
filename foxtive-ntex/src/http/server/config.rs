@@ -13,7 +13,7 @@ use std::sync::Arc;
 ///
 /// # Example
 /// ```rust
-/// use foxtive_ntex::http::StaticFileConfig;
+/// use foxtive_ntex::http::server::StaticFileConfig;
 ///
 /// let config = StaticFileConfig {
 ///     path: "/assets".to_string(),
@@ -55,7 +55,7 @@ pub struct StaticFileConfig {
 ///
 /// # Example
 /// ```rust
-/// use foxtive_ntex::http::JsonConfig;
+/// use foxtive_ntex::http::server::JsonConfig;
 ///
 /// // Use default configuration (50 KB limit)
 /// let config = JsonConfig::default();
