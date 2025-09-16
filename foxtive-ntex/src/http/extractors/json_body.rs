@@ -1,4 +1,5 @@
 use crate::error::HttpError;
+use crate::{FoxtiveNtexExt, FOXTIVE_NTEX};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::Payload;
 use ntex::util::BytesMut;
@@ -107,9 +108,22 @@ impl<Err> FromRequest<Err> for JsonBody {
         _req: &HttpRequest,
         payload: &mut Payload,
     ) -> Result<JsonBody, Self::Error> {
+        let max_size = FOXTIVE_NTEX.app().json_config.limit;
         let mut bytes = BytesMut::new();
+        let mut total_size = 0;
+
         while let Some(item) = ntex::util::stream_recv(payload).await {
-            bytes.extend_from_slice(&item?);
+            let chunk = item?;
+            total_size += chunk.len();
+
+            // Check if we've exceeded the limit
+            if total_size > max_size {
+                return Err(HttpError::AppMessage(AppMessage::WarningMessage(
+                    "Json body exceeded maximum size",
+                )));
+            }
+
+            bytes.extend_from_slice(&chunk);
         }
 
         let raw = String::from_utf8(bytes.to_vec())?;

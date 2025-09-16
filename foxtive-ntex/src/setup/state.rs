@@ -1,5 +1,6 @@
 use crate::http::Method;
 use std::fmt::{Debug, Formatter};
+use crate::http::server::JsonConfig;
 
 #[derive(Clone)]
 pub struct FoxtiveNtexState {
@@ -8,6 +9,9 @@ pub struct FoxtiveNtexState {
 
     /// list of allowed methods
     pub allowed_methods: Vec<Method>,
+
+    /// Json body config
+    pub json_config: JsonConfig,
 }
 
 impl Debug for FoxtiveNtexState {

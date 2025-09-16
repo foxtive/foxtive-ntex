@@ -1,23 +1,26 @@
 use crate::http::middlewares::executor::MiddlewareExecutor;
 use foxtive::prelude::AppResult;
 use ntex::web::{HttpRequest, WebResponse};
-use std::future::Future;
-use std::pin::Pin;
+use std::sync::Arc;
 
 mod executor;
 
-pub type BeforeMiddlewareHandler =
-    fn(HttpRequest) -> Pin<Box<dyn Future<Output = AppResult<HttpRequest>>>>;
+#[foxtive::async_trait(?Send)]
+pub trait BeforeMiddleware {
+    async fn handle(&self, req: HttpRequest) -> AppResult<HttpRequest>;
+}
 
-pub type AfterMiddlewareHandler =
-    fn(WebResponse) -> Pin<Box<dyn Future<Output = AppResult<WebResponse>>>>;
+#[foxtive::async_trait(?Send)]
+pub trait AfterMiddleware {
+    async fn handle(&self, res: WebResponse) -> AppResult<WebResponse>;
+}
 
 #[derive(Clone)]
 pub enum Middleware {
     /// Before middleware, called before the request is handled by the handler
-    Before(BeforeMiddlewareHandler),
+    Before(Arc<dyn BeforeMiddleware>),
     /// After middleware, called after the request is handled by the handler
-    After(AfterMiddlewareHandler),
+    After(Arc<dyn AfterMiddleware>),
 }
 
 impl Middleware {

@@ -3,6 +3,10 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.22.0 (2025-09-16)
+* refactor(middleware): introduced BeforeMiddleware & AfterMiddleware
+* feat(json): add JsonConfig to control max body size
+
 ### 0.21.1 (2025-09-11)
 * fix(ext): module should be public
 

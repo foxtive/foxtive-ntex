@@ -1,16 +1,16 @@
 mod config;
 
-pub use config::ServerConfig;
 #[cfg(feature = "static")]
 pub use config::StaticFileConfig;
+pub use config::{JsonConfig, ServerConfig};
 
+use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger};
+use crate::setup::{make_ntex_state, FoxtiveNtexSetup};
 use crate::FoxtiveNtexState;
-use crate::http::kernel::{Route, ntex_default_service, register_routes, setup_cors, setup_logger};
-use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
-use foxtive::Error;
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;
 use foxtive::setup::trace::Tracing;
+use foxtive::Error;
 use ntex::web;
 use std::future::Future;
 use tracing::{debug, error};
@@ -21,14 +21,13 @@ pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
     Ok(())
 }
 
-pub async fn start_ntex_server<Callback, Fut, TB>(
-    config: ServerConfig<TB>,
+pub async fn start_ntex_server<Callback, Fut>(
+    config: ServerConfig,
     callback: Callback,
 ) -> AppResult<()>
 where
     Callback: FnOnce(FoxtiveNtexState) -> Fut + Copy + Send + 'static,
     Fut: Future<Output = AppResult<()>> + Send + 'static,
-    TB: FnOnce() -> Vec<Route> + Send + Copy + 'static,
 {
     if !config.has_started_bootstrap {
         let t_config = config.tracing.unwrap_or_default();
@@ -37,10 +36,12 @@ where
     }
 
     debug!("Creating Foxtive-Ntex state");
+    let json_config = config.json_config.unwrap_or_default();
     let app_state = make_ntex_state(FoxtiveNtexSetup {
         allowed_origins: config.allowed_origins,
         allowed_methods: config.allowed_methods,
         foxtive_setup: config.foxtive_setup,
+        json_config: json_config.clone(),
     })
     .await?;
 
@@ -54,15 +55,13 @@ where
     }
 
     let boot = config.boot_thread;
-    let alt_routes = config.routes;
+    let ntex_json_config = web::types::JsonConfig::default().limit(json_config.limit);
 
     web::HttpServer::new(move || {
-        let routes = match boot {
-            None => alt_routes.clone(),
-            Some(boot) => boot(),
-        };
+        let routes = boot();
 
         let app = web::App::new()
+            .state(ntex_json_config.clone())
             .state(app_state.clone())
             .configure(|cfg| register_routes(cfg, routes))
             .wrap(setup_logger())
