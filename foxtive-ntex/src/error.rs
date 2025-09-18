@@ -10,6 +10,7 @@ use ntex::web::error::BlockingError;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::string::FromUtf8Error;
 use thiserror::Error;
+use tokio::task::JoinError;
 
 #[derive(Error, Debug)]
 pub enum HttpError {
@@ -21,6 +22,8 @@ pub enum HttpError {
     AppMessage(#[from] AppMessage),
     #[error("Payload Error: {0}")]
     PayloadError(#[from] PayloadError),
+    #[error("Join Error: {0}")]
+    JoinError(#[from] JoinError),
     #[error("Utf8 Error: {0}")]
     Utf8Error(#[from] FromUtf8Error),
     #[cfg(feature = "validator")]
