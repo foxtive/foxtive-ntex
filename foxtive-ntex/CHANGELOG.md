@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.22.1 (2025-09-19)
+* fix(http): auto handle JointError to allow propagating blocking error in handler
+
 ### 0.22.0 (2025-09-16)
 * refactor(middleware): introduced BeforeMiddleware & AfterMiddleware
 * feat(json): add JsonConfig to control max body size
