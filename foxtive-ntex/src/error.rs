@@ -1,11 +1,11 @@
 use crate::error::helpers::make_http_error_response;
 use crate::http::response::anyhow::helpers::make_status_code;
-use foxtive::prelude::AppMessage;
 use foxtive::Error;
+use foxtive::prelude::AppMessage;
 #[cfg(feature = "multipart")]
 use foxtive_ntex_multipart::{ErrorMessage as MultipartErrorMessage, MultipartError};
-use ntex::http::error::PayloadError;
 use ntex::http::StatusCode;
+use ntex::http::error::PayloadError;
 use ntex::web::error::BlockingError;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::string::FromUtf8Error;
@@ -85,9 +85,9 @@ impl WebResponseError for HttpError {
 
 pub(crate) mod helpers {
     use crate::enums::ResponseCode;
+    use crate::http::HttpError;
     use crate::http::responder::Responder;
     use crate::http::response::anyhow::helpers::make_response;
-    use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
     #[cfg(feature = "multipart")]
     use foxtive_ntex_multipart::MultipartError;
