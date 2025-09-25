@@ -89,9 +89,9 @@ pub(crate) mod helpers {
     use crate::http::response::anyhow::helpers::make_response;
     use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
+    #[cfg(feature = "multipart")]
     use foxtive_ntex_multipart::MultipartError;
     use ntex::web::HttpResponse;
-    use serde_json::json;
     use tracing::error;
 
     pub(crate) fn make_http_error_response(err: &HttpError) -> HttpResponse {
@@ -114,14 +114,14 @@ pub(crate) mod helpers {
                     MultipartError::ValidationError(val) => {
                         let msg = err.to_string();
                         Responder::send_msg(
-                            json!({"field": val.name, "error": msg}),
+                            serde_json::json!({"field": val.name, "error": msg}),
                             ResponseCode::BadRequest,
                             &msg,
                         )
                     }
                     _ => {
                         let msg = err.to_string();
-                        Responder::send_msg(json!({"message": msg}), ResponseCode::BadRequest, &msg)
+                        Responder::send_msg(serde_json::json!({"message": msg}), ResponseCode::BadRequest, &msg)
                     }
                 }
             }
