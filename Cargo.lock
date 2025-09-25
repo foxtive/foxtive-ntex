@@ -50,9 +50,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.99"
+version = "1.0.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0674a1ddeecb70197781e945de4b3b8ffb61fa939a5597bcf48503737663100"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 dependencies = [
  "backtrace",
 ]
@@ -344,9 +344,9 @@ dependencies = [
 
 [[package]]
 name = "diesel"
-version = "2.3.1"
+version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb300b92bb5f1a44ce412aeb36a7387931bf7a5238b4570bc1d0b9c8a78fde4e"
+checksum = "e8496eeb328dce26ee9d9b73275d396d9bddb433fa30106cf6056dd8c3c2764c"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -541,9 +541,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.18.1"
+version = "0.18.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95791331167aa568f298e4d549952d6275388c06007ac243854858bc6b9c92db"
+checksum = "2407fb113f55b37abfb9a4336efd078fa443d77eddabb3c1d0d284bfd1a0805c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -568,8 +568,8 @@ name = "foxtive-ntex"
 version = "0.22.1"
 dependencies = [
  "chrono",
- "foxtive 0.18.1",
- "foxtive-ntex-multipart 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "foxtive 0.18.4",
+ "foxtive-ntex-multipart 0.6.0",
  "futures-util",
  "jsonwebtoken",
  "mime",
@@ -589,19 +589,6 @@ dependencies = [
 [[package]]
 name = "foxtive-ntex-multipart"
 version = "0.6.0"
-dependencies = [
- "foxtive 0.18.1",
- "futures",
- "ntex",
- "ntex-multipart",
- "thiserror",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "foxtive-ntex-multipart"
-version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6d3e2223af90655fa5e3060b8b1162d6acdb535f95712988e0a894ad22d73cc"
 dependencies = [
@@ -611,6 +598,19 @@ dependencies = [
  "ntex-multipart",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "foxtive-ntex-multipart"
+version = "0.7.0"
+dependencies = [
+ "foxtive 0.18.4",
+ "futures",
+ "ntex",
+ "ntex-multipart",
+ "thiserror",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]

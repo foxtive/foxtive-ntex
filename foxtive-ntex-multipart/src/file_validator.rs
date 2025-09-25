@@ -10,14 +10,14 @@ pub struct InputError {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ErrorMessage {
-    NoFiles,
-    FileTooSmall(usize),
-    FileTooLarge(usize),
-    TooFewFiles(usize),
-    TooManyFiles(usize),
-    InvalidFileExtension(Option<String>),
-    InvalidContentType(String),
-    MissingFileExtension(String),
+    NoFiles(String),
+    FileTooSmall(String, String, usize),
+    FileTooLarge(String, String, usize),
+    TooFewFiles(String, usize),
+    TooManyFiles(String, usize),
+    InvalidFileExtension(String, String, Option<String>),
+    InvalidContentType(String, String, String),
+    MissingFileExtension(String, String, String),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -82,8 +82,8 @@ impl Validator {
         if files.is_none() {
             if rules.required {
                 return Err(InputError {
-                    name: field_name,
-                    error: ErrorMessage::NoFiles,
+                    name: field_name.clone(),
+                    error: ErrorMessage::NoFiles(field_name),
                 });
             }
 
@@ -96,39 +96,43 @@ impl Validator {
         // Validate required
         if rules.required && file_count == 0 {
             return Err(InputError {
-                name: field_name,
-                error: ErrorMessage::NoFiles,
+                name: field_name.clone(),
+                error: ErrorMessage::NoFiles(field_name),
             });
         }
 
         if file_count < rules.min_files.unwrap_or(0) {
             return Err(InputError {
-                name: field_name,
-                error: ErrorMessage::TooFewFiles(file_count),
+                name: field_name.clone(),
+                error: ErrorMessage::TooFewFiles(field_name, file_count),
             });
         }
 
         if file_count > rules.max_files.unwrap_or(usize::MAX) {
             return Err(InputError {
-                name: field_name,
-                error: ErrorMessage::TooManyFiles(file_count),
+                name: field_name.clone(),
+                error: ErrorMessage::TooManyFiles(field_name, file_count),
             });
         }
 
         for file in files {
-            Self::validate_file(rules.clone(), file)?;
+            Self::validate_file(&field_name, rules.clone(), file)?;
         }
 
         // If all checks passed
         Ok(())
     }
 
-    fn validate_file(rule: FileRules, file: &FileInput) -> Result<(), InputError> {
+    fn validate_file(field_name: &str, rule: FileRules, file: &FileInput) -> Result<(), InputError> {
         // Validate file extension
         if rule.extension_required && file.extension.is_none() {
             return Err(InputError {
-                name: file.field_name.to_string(),
-                error: ErrorMessage::MissingFileExtension(file.file_name.clone()),
+                name: field_name.to_string(),
+                error: ErrorMessage::MissingFileExtension(
+                    field_name.to_string(),
+                    file.file_name.clone(),
+                    "Extension is required".to_string(),
+                ),
             });
         }
 
@@ -137,8 +141,12 @@ impl Validator {
             && file.size < min_size
         {
             return Err(InputError {
-                name: file.field_name.to_string(),
-                error: ErrorMessage::FileTooSmall(min_size),
+                name: field_name.to_string(),
+                error: ErrorMessage::FileTooSmall(
+                    field_name.to_string(),
+                    file.file_name.clone(),
+                    min_size,
+                ),
             });
         }
 
@@ -146,8 +154,12 @@ impl Validator {
             && file.size > max_size
         {
             return Err(InputError {
-                name: file.field_name.to_string(),
-                error: ErrorMessage::FileTooLarge(max_size),
+                name: field_name.to_string(),
+                error: ErrorMessage::FileTooLarge(
+                    field_name.to_string(),
+                    file.file_name.clone(),
+                    max_size,
+                ),
             });
         }
 
@@ -156,14 +168,22 @@ impl Validator {
             if let Some(extension) = &file.extension {
                 if !allowed_extensions.contains(&extension.to_lowercase()) {
                     return Err(InputError {
-                        name: file.field_name.to_string(),
-                        error: ErrorMessage::InvalidFileExtension(file.extension.clone()),
+                        name: field_name.to_string(),
+                        error: ErrorMessage::InvalidFileExtension(
+                            field_name.to_string(),
+                            file.file_name.clone(),
+                            file.extension.clone(),
+                        ),
                     });
                 }
             } else {
                 return Err(InputError {
-                    name: file.field_name.to_string(),
-                    error: ErrorMessage::MissingFileExtension(file.file_name.clone()),
+                    name: field_name.to_string(),
+                    error: ErrorMessage::MissingFileExtension(
+                        field_name.to_string(),
+                        file.file_name.clone(),
+                        "File extension is missing but required".to_string(),
+                    ),
                 });
             }
         }
@@ -173,10 +193,14 @@ impl Validator {
             && !allowed_content_types.contains(&file.content_type.to_lowercase())
         {
             return Err(InputError {
-                name: file.field_name.to_string(),
-                error: ErrorMessage::InvalidContentType(format!(
-                    "Invalid content type. Allowed content types are: {allowed_content_types:?}"
-                )),
+                name: field_name.to_string(),
+                error: ErrorMessage::InvalidContentType(
+                    field_name.to_string(),
+                    file.file_name.clone(),
+                    format!(
+                        "Invalid content type. Allowed content types are: {allowed_content_types:?}"
+                    ),
+                ),
             });
         }
 
@@ -224,7 +248,7 @@ mod tests {
 
         assert!(result.is_err());
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
-            assert_eq!(error, ErrorMessage::NoFiles);
+            assert_eq!(error, ErrorMessage::NoFiles("file_field".to_string()));
         }
     }
 
@@ -265,7 +289,14 @@ mod tests {
 
         assert!(result.is_err());
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
-            assert_eq!(error, ErrorMessage::FileTooSmall(1024));
+            assert_eq!(
+                error,
+                ErrorMessage::FileTooSmall(
+                    "file_field".to_string(),
+                    "test.jpg".to_string(),
+                    1024
+                )
+            );
         }
     }
 
@@ -309,7 +340,11 @@ mod tests {
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
             assert_eq!(
                 error,
-                ErrorMessage::InvalidFileExtension(Some("txt".to_string()))
+                ErrorMessage::InvalidFileExtension(
+                    "file_field".to_string(),
+                    "test.txt".to_string(),
+                    Some("txt".to_string())
+                )
             );
         }
     }
@@ -360,7 +395,14 @@ mod tests {
 
         assert!(result.is_err());
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
-            assert_eq!(error, ErrorMessage::InvalidContentType("Invalid content type. Allowed content types are: [\"image/jpeg\", \"image/png\"]".to_string()));
+            assert_eq!(
+                error,
+                ErrorMessage::InvalidContentType(
+                    "file_field".to_string(),
+                    "test.jpg".to_string(),
+                    "Invalid content type. Allowed content types are: [\"image/jpeg\", \"image/png\"]".to_string()
+                )
+            );
         }
     }
 
@@ -382,7 +424,10 @@ mod tests {
 
         assert!(result.is_err());
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
-            assert_eq!(error, ErrorMessage::TooFewFiles(1));
+            assert_eq!(
+                error,
+                ErrorMessage::TooFewFiles("file_field".to_string(), 1)
+            );
         }
     }
 
@@ -405,7 +450,10 @@ mod tests {
 
         assert!(result.is_err());
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
-            assert_eq!(error, ErrorMessage::TooManyFiles(2));
+            assert_eq!(
+                error,
+                ErrorMessage::TooManyFiles("file_field".to_string(), 2)
+            );
         }
     }
 
