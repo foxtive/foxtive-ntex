@@ -49,49 +49,86 @@ impl Display for MultipartError {
                 write!(f, "{err}")
             }
             MultipartError::ValidationError(err) => {
-                let field_name = err.name.clone().replace("_", " ");
-                match err.error.clone() {
-                    ErrorMessage::NoFiles => {
-                        write!(f, "No files were uploaded for field: '{field_name}'")
+                match &err.error {
+                    ErrorMessage::NoFiles(field_name) => {
+                        let display_name = field_name.replace("_", " ");
+                        write!(f, "No files were uploaded for field: '{display_name}'")
                     }
-                    ErrorMessage::FileTooSmall(size) => {
+                    ErrorMessage::FileTooSmall(field_name, file_name, size) => {
+                        let display_name = field_name.replace("_", " ");
                         write!(
                             f,
-                            "File size is too small for field '{field_name}'. Minimum size is {}",
-                            FileInput::format_size(size)
+                            "File '{}' is too small for field '{}'. Minimum size is {}",
+                            file_name,
+                            display_name,
+                            FileInput::format_size(*size)
                         )
                     }
-                    ErrorMessage::FileTooLarge(size) => {
+                    ErrorMessage::FileTooLarge(field_name, file_name, size) => {
+                        let display_name = field_name.replace("_", " ");
                         write!(
                             f,
-                            "File size is too big for field '{field_name}'. Maximum size is {}",
-                            FileInput::format_size(size)
+                            "File '{}' is too large for field '{}'. Maximum size is {}",
+                            file_name,
+                            display_name,
+                            FileInput::format_size(*size)
                         )
                     }
-                    ErrorMessage::TooFewFiles(count) => {
+                    ErrorMessage::TooFewFiles(field_name, count) => {
+                        let display_name = field_name.replace("_", " ");
                         write!(
                             f,
-                            "Too few files uploaded for field '{field_name}'. Minimum is {count}"
+                            "Too few files uploaded for field '{}'. Current count: {}, minimum required",
+                            display_name,
+                            count
                         )
                     }
-                    ErrorMessage::TooManyFiles(count) => {
+                    ErrorMessage::TooManyFiles(field_name, count) => {
+                        let display_name = field_name.replace("_", " ");
                         write!(
                             f,
-                            "Too many files uploaded for field '{field_name}'. Maximum is {count}"
+                            "Too many files uploaded for field '{}'. Current count: {}, maximum allowed",
+                            display_name,
+                            count
                         )
                     }
-                    ErrorMessage::InvalidFileExtension(ext) => {
+                    ErrorMessage::InvalidFileExtension(field_name, file_name, ext) => {
+                        let display_name = field_name.replace("_", " ");
+                        match ext {
+                            Some(extension) => write!(
+                                f,
+                                "Invalid file extension '.{}' for file '{}' in field '{}'",
+                                extension,
+                                file_name,
+                                display_name
+                            ),
+                            None => write!(
+                                f,
+                                "Missing file extension for file '{}' in field '{}'",
+                                file_name,
+                                display_name
+                            )
+                        }
+                    }
+                    ErrorMessage::InvalidContentType(field_name, file_name, message) => {
+                        let display_name = field_name.replace("_", " ");
                         write!(
                             f,
-                            "Invalid file extension for field '{field_name}': .{}",
-                            ext.clone().unwrap_or_default()
+                            "Invalid content type for file '{}' in field '{}': {}",
+                            file_name,
+                            display_name,
+                            message
                         )
                     }
-                    ErrorMessage::InvalidContentType(mime) => {
-                        write!(f, "Invalid mime type: {mime}")
-                    }
-                    ErrorMessage::MissingFileExtension(mime) => {
-                        write!(f, "Invalid file, file extension is required: {mime}")
+                    ErrorMessage::MissingFileExtension(field_name, file_name, message) => {
+                        let display_name = field_name.replace("_", " ");
+                        write!(
+                            f,
+                            "Missing file extension for file '{}' in field '{}': {}",
+                            file_name,
+                            display_name,
+                            message
+                        )
                     }
                 }
             }
