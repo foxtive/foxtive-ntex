@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.22.3 (2025-09-25)
+* fix(multipart): avoid logging unnecessary error logs
+
 ### 0.22.2 (2025-09-25)
 * fix(validator): return meaningful info
 

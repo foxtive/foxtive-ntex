@@ -100,7 +100,6 @@ pub(crate) mod helpers {
             HttpError::AppError(e) => make_response(e),
             #[cfg(feature = "validator")]
             HttpError::ValidationError(e) => {
-                error!("Validation Error: {e}");
                 Responder::send_msg(e.errors(), ResponseCode::BadRequest, "Validation Error")
             }
             HttpError::PayloadError(e) => {
@@ -108,23 +107,24 @@ pub(crate) mod helpers {
                 Responder::send_msg(e.to_string(), ResponseCode::BadRequest, "Payload Error")
             }
             #[cfg(feature = "multipart")]
-            HttpError::MultipartError(err) => {
-                error!("Multipart Error: {err}");
-                match err {
-                    MultipartError::ValidationError(val) => {
-                        let msg = err.to_string();
-                        Responder::send_msg(
-                            serde_json::json!({"field": val.name, "error": msg}),
-                            ResponseCode::BadRequest,
-                            &msg,
-                        )
-                    }
-                    _ => {
-                        let msg = err.to_string();
-                        Responder::send_msg(serde_json::json!({"message": msg}), ResponseCode::BadRequest, &msg)
-                    }
+            HttpError::MultipartError(err) => match err {
+                MultipartError::ValidationError(val) => {
+                    let msg = err.to_string();
+                    Responder::send_msg(
+                        serde_json::json!({"field": val.name, "error": msg}),
+                        ResponseCode::BadRequest,
+                        &msg,
+                    )
                 }
-            }
+                _ => {
+                    let msg = err.to_string();
+                    Responder::send_msg(
+                        serde_json::json!({"message": msg}),
+                        ResponseCode::BadRequest,
+                        &msg,
+                    )
+                }
+            },
             _ => {
                 error!("Error: {err}");
                 make_response(&foxtive::Error::from(AppMessage::InternalServerError))
