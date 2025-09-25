@@ -123,7 +123,11 @@ impl Validator {
         Ok(())
     }
 
-    fn validate_file(field_name: &str, rule: FileRules, file: &FileInput) -> Result<(), InputError> {
+    fn validate_file(
+        field_name: &str,
+        rule: FileRules,
+        file: &FileInput,
+    ) -> Result<(), InputError> {
         // Validate file extension
         if rule.extension_required && file.extension.is_none() {
             return Err(InputError {
@@ -291,11 +295,7 @@ mod tests {
         if let Err(MultipartError::ValidationError(InputError { error, .. })) = result {
             assert_eq!(
                 error,
-                ErrorMessage::FileTooSmall(
-                    "file_field".to_string(),
-                    "test.jpg".to_string(),
-                    1024
-                )
+                ErrorMessage::FileTooSmall("file_field".to_string(), "test.jpg".to_string(), 1024)
             );
         }
     }
