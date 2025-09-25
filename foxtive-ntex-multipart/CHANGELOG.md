@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.7.0 (2025-09-25)
+* refactor(validator): reimagine the impl to pass more meaningful error message
+
 ### 0.6.0 (2025-09-10)
 * bump(ntex-rs): to version 2.16.0
 

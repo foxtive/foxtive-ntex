@@ -1,11 +1,11 @@
 use crate::error::helpers::make_http_error_response;
 use crate::http::response::anyhow::helpers::make_status_code;
-use foxtive::Error;
 use foxtive::prelude::AppMessage;
+use foxtive::Error;
 #[cfg(feature = "multipart")]
 use foxtive_ntex_multipart::{ErrorMessage as MultipartErrorMessage, MultipartError};
-use ntex::http::StatusCode;
 use ntex::http::error::PayloadError;
+use ntex::http::StatusCode;
 use ntex::web::error::BlockingError;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::string::FromUtf8Error;
@@ -66,8 +66,8 @@ impl WebResponseError for HttpError {
             #[cfg(feature = "multipart")]
             HttpError::MultipartError(err) => match err {
                 MultipartError::ValidationError(err) => match err.error {
-                    MultipartErrorMessage::InvalidFileExtension(_)
-                    | MultipartErrorMessage::InvalidContentType(_) => {
+                    MultipartErrorMessage::InvalidFileExtension(_, _, _)
+                    | MultipartErrorMessage::InvalidContentType(_, _, _) => {
                         StatusCode::UNSUPPORTED_MEDIA_TYPE
                     }
                     _ => StatusCode::BAD_REQUEST,
@@ -85,11 +85,13 @@ impl WebResponseError for HttpError {
 
 pub(crate) mod helpers {
     use crate::enums::ResponseCode;
-    use crate::http::HttpError;
     use crate::http::responder::Responder;
     use crate::http::response::anyhow::helpers::make_response;
+    use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
+    use foxtive_ntex_multipart::MultipartError;
     use ntex::web::HttpResponse;
+    use serde_json::json;
     use tracing::error;
 
     pub(crate) fn make_http_error_response(err: &HttpError) -> HttpResponse {
@@ -108,11 +110,20 @@ pub(crate) mod helpers {
             #[cfg(feature = "multipart")]
             HttpError::MultipartError(err) => {
                 error!("Multipart Error: {err}");
-                Responder::send_msg(
-                    err.to_string(),
-                    ResponseCode::BadRequest,
-                    "File Upload Error",
-                )
+                match err {
+                    MultipartError::ValidationError(val) => {
+                        let msg = err.to_string();
+                        Responder::send_msg(
+                            json!({"field": val.name, "error": msg}),
+                            ResponseCode::BadRequest,
+                            &msg,
+                        )
+                    }
+                    _ => {
+                        let msg = err.to_string();
+                        Responder::send_msg(json!({"message": msg}), ResponseCode::BadRequest, &msg)
+                    }
+                }
             }
             _ => {
                 error!("Error: {err}");
@@ -173,7 +184,11 @@ mod tests {
         use foxtive_ntex_multipart::InputError;
 
         let error = HttpError::MultipartError(MultipartError::ValidationError(InputError {
-            error: MultipartErrorMessage::InvalidFileExtension(Some("mp4".to_string())),
+            error: MultipartErrorMessage::InvalidFileExtension(
+                "image".to_string(),
+                "invalid ext".to_string(),
+                Some("mp4".to_string()),
+            ),
             name: "image".to_string(),
         }));
 

@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.22.2 (2025-09-25)
+* fix(validator): return meaningful info
+
 ### 0.22.1 (2025-09-19)
 * fix(http): auto handle JointError to allow propagating blocking error in handler
 
