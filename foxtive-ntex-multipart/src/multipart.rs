@@ -254,9 +254,10 @@ impl Multipart {
     }
 
     /// Validate all files against the provided rules
-    pub async fn validate(&mut self, validator: Validator) -> MultipartResult<&mut Multipart> {
+    pub async fn validate(mut self, validator: Validator) -> MultipartResult<Self> {
         self.process().await?;
-        validator.validate(&self.file_inputs).map(|_| self)
+        validator.validate(&self.file_inputs)?;
+        Ok(self)
     }
 
     /// Add test data to multipart instance (for testing purposes only)
