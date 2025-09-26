@@ -221,7 +221,7 @@ impl Multipart {
 
     /// Take ownership of the first data input for a given field.
     /// Returns an error if the field is not found
-    pub fn into_first_data_required(mut self, field: &str) -> MultipartResult<DataInput> {
+    pub fn into_first_data_required(self, field: &str) -> MultipartResult<DataInput> {
         self.into_first_data(field)
             .ok_or(MultipartError::MissingDataField(field.to_string()))
     }
@@ -240,7 +240,7 @@ impl Multipart {
 
     /// Take ownership of the first file for a given field.
     /// Returns an error if the field is not found
-    pub fn into_first_file_required(mut self, field: &str) -> MultipartResult<FileInput> {
+    pub fn into_first_file_required(self, field: &str) -> MultipartResult<FileInput> {
         self.into_first_file(field)
             .ok_or(MultipartError::MissingDataField(field.to_string()))
     }
