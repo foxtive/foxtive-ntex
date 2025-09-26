@@ -197,6 +197,54 @@ impl Multipart {
         self.file_inputs.contains_key(field)
     }
 
+    /// Take ownership of all data inputs, consuming the multipart instance
+    pub fn into_all_data(self) -> HashMap<String, Vec<DataInput>> {
+        self.data_inputs
+    }
+
+    /// Take ownership of all file inputs, consuming the multipart instance
+    pub fn into_all_files(self) -> HashMap<String, Vec<FileInput>> {
+        self.file_inputs
+    }
+
+    /// Take ownership of data inputs for a specific field
+    pub fn into_data(mut self, field: &str) -> Option<Vec<DataInput>> {
+        self.data_inputs.remove(field)
+    }
+
+    /// Take ownership of the first data input for a given field
+    pub fn into_first_data(mut self, field: &str) -> Option<DataInput> {
+        self.data_inputs
+            .get_mut(field)
+            .and_then(|inputs| if inputs.is_empty() { None } else { Some(inputs.remove(0)) })
+    }
+
+    /// Take ownership of the first data input for a given field.
+    /// Returns an error if the field is not found
+    pub fn into_first_data_required(mut self, field: &str) -> MultipartResult<DataInput> {
+        self.into_first_data(field)
+            .ok_or(MultipartError::MissingDataField(field.to_string()))
+    }
+
+    /// Take ownership of file inputs for a specific field
+    pub fn into_files(mut self, field: &str) -> Option<Vec<FileInput>> {
+        self.file_inputs.remove(field)
+    }
+
+    /// Take ownership of the first file for a given field
+    pub fn into_first_file(mut self, field: &str) -> Option<FileInput> {
+        self.file_inputs
+            .get_mut(field)
+            .and_then(|files| if files.is_empty() { None } else { Some(files.remove(0)) })
+    }
+
+    /// Take ownership of the first file for a given field.
+    /// Returns an error if the field is not found
+    pub fn into_first_file_required(mut self, field: &str) -> MultipartResult<FileInput> {
+        self.into_first_file(field)
+            .ok_or(MultipartError::MissingDataField(field.to_string()))
+    }
+
     /// Validate all files against the provided rules
     pub async fn validate(&mut self, validator: Validator) -> MultipartResult<&mut Multipart> {
         self.process().await?;
