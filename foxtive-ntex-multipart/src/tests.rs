@@ -124,7 +124,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let multipart_instance = Multipart::new(multipart).await;
 
         // No files added, so validation should fail
         let validator = Validator::new().add_rule(

@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.7.2 (2025-09-26)
+* fix(validate): method now returns owned instance
+
 ### 0.7.1 (2025-09-25)
 * feat(multipart): added several into_* methods to the Multipart struct that provide owned access to the data and files
 
