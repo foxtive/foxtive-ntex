@@ -3,7 +3,7 @@ Foxtive-Ntex changelog file
 
 ------
 
-### 0.22.4 (2025-10-02)
+### 0.23.0 (2025-10-03)
 * feat(HttpError): impl JsonError for HttpError
 * feat(jsonwebtoken): bumped to v10.0.0
 
