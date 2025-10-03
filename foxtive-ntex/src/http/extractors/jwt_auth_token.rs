@@ -25,7 +25,7 @@ impl JwtAuthToken {
 
     /// Decode and verify the JWT, returning the claims as type `T`.
     /// Secret and validation should be passed explicitly.
-    pub fn decode<T: DeserializeOwned>(
+    pub fn decode<T: DeserializeOwned + Clone>(
         &self,
         secret: &str,
         validation: &Validation,

@@ -214,13 +214,9 @@ impl Multipart {
 
     /// Take ownership of the first data input for a given field
     pub fn into_first_data(mut self, field: &str) -> Option<DataInput> {
-        self.data_inputs.get_mut(field).and_then(|inputs| {
-            if inputs.is_empty() {
-                None
-            } else {
-                Some(inputs.remove(0))
-            }
-        })
+        self.data_inputs
+            .get_mut(field)
+            .and_then(|inputs| if inputs.is_empty() { None } else { Some(inputs.remove(0)) })
     }
 
     /// Take ownership of the first data input for a given field.
@@ -237,13 +233,9 @@ impl Multipart {
 
     /// Take ownership of the first file for a given field
     pub fn into_first_file(mut self, field: &str) -> Option<FileInput> {
-        self.file_inputs.get_mut(field).and_then(|files| {
-            if files.is_empty() {
-                None
-            } else {
-                Some(files.remove(0))
-            }
-        })
+        self.file_inputs
+            .get_mut(field)
+            .and_then(|files| if files.is_empty() { None } else { Some(files.remove(0)) })
     }
 
     /// Take ownership of the first file for a given field.

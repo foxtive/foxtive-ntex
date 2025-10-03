@@ -6,7 +6,7 @@ use foxtive::prelude::AppMessage;
 use foxtive_ntex_multipart::{ErrorMessage as MultipartErrorMessage, MultipartError};
 use ntex::http::StatusCode;
 use ntex::http::error::PayloadError;
-use ntex::web::error::BlockingError;
+use ntex::web::error::{BlockingError, JsonError};
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::string::FromUtf8Error;
 use thiserror::Error;
@@ -26,6 +26,8 @@ pub enum HttpError {
     JoinError(#[from] JoinError),
     #[error("Utf8 Error: {0}")]
     Utf8Error(#[from] FromUtf8Error),
+    #[error("Json Error: {0}")]
+    JsonError(#[from] JsonError),
     #[cfg(feature = "validator")]
     #[error("Validation Error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
@@ -62,7 +64,7 @@ impl WebResponseError for HttpError {
             HttpError::AppError(e) => make_status_code(e),
             #[cfg(feature = "validator")]
             HttpError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            HttpError::PayloadError(_) => StatusCode::BAD_REQUEST,
+            HttpError::PayloadError(_) | HttpError::JsonError(_) => StatusCode::BAD_REQUEST,
             #[cfg(feature = "multipart")]
             HttpError::MultipartError(err) => match err {
                 MultipartError::ValidationError(err) => match err.error {
@@ -105,6 +107,14 @@ pub(crate) mod helpers {
             HttpError::PayloadError(e) => {
                 error!("Payload Error: {e}");
                 Responder::send_msg(e.to_string(), ResponseCode::BadRequest, "Payload Error")
+            }
+            HttpError::JsonError(e) => {
+                error!("Json Error: {e}");
+                Responder::send_msg(
+                    e.to_string(),
+                    ResponseCode::BadRequest,
+                    "Json Payload Error",
+                )
             }
             #[cfg(feature = "multipart")]
             HttpError::MultipartError(err) => match err {
