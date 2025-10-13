@@ -74,10 +74,10 @@ pub fn setup_logger() -> Logger {
 }
 
 pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>) -> Cors {
-    let mut cors = Cors::new().send_wildcard();
+    let mut cors = Cors::new();
 
     for origin in origins {
-        info!("registering cors origin: {origin}...");
+        info!("registering cors origin: '{origin}'...");
 
         // convert "*" to ntex-compatible value
         let origin = match origin == "*" {
@@ -104,6 +104,7 @@ pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>) -> Cors {
         .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
         .allowed_header(header::CONTENT_TYPE)
         .max_age(3600)
+        .send_wildcard()
 }
 
 pub fn ntex_default_service() -> NtexRoute {

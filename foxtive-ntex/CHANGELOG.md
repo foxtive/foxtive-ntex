@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.23.1 (2025-10-13)
+* fix(cors): set send_wildcard after collecting origins
+
 ### 0.23.0 (2025-10-03)
 * feat(HttpError): impl JsonError for HttpError
 * feat(jsonwebtoken): bumped to v10.0.0
