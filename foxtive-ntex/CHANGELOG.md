@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.23.2 (2025-10-13)
+* fix(cors): buggy cors setter
+
 ### 0.23.1 (2025-10-13)
 * fix(cors): set send_wildcard after collecting origins
 
