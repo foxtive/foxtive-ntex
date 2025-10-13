@@ -78,13 +78,7 @@ pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>) -> Cors {
 
     for origin in origins {
         info!("registering cors origin: '{origin}'...");
-
-        // convert "*" to ntex-compatible value
-        let origin = match origin == "*" {
-            false => origin,
-            true => "All".to_string(),
-        };
-
+        // Just pass the origin as-is, ntex handles "*" natively
         cors = cors.allowed_origin(origin.as_str());
     }
 
