@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.24.0 (2025-11-12)
+* refactor(middleware): replace MiddlewareExecutor with unified MiddlewareChain
+
 ### 0.23.3 (2025-11-12)
 * feat(responder): add .respond_undecorated() .respond_undecorated_code() to send json resp without decoration
 
