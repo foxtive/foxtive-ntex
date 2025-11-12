@@ -1,41 +1,46 @@
-use crate::http::middlewares::Middleware;
+use crate::http::middlewares::{Middleware, MiddlewareFlow};
 use crate::http::response::anyhow::ResponseError;
 use ntex::service::{Middleware as ServiceMiddleware, Service, ServiceCtx};
 use ntex::web;
-use ntex::web::{Error, WebRequest};
+use ntex::web::{Error, WebRequest, WebResponse};
 use std::rc::Rc;
 use tracing::{debug, error, info};
 
 #[derive(Clone)]
-pub struct MiddlewareExecutor {
-    handler: Rc<Middleware>,
+pub struct MiddlewareChain {
+    middlewares: Rc<Vec<Middleware>>,
 }
 
-impl MiddlewareExecutor {
-    pub fn new(handler: Middleware) -> Self {
-        MiddlewareExecutor {
-            handler: Rc::new(handler),
+impl MiddlewareChain {
+    pub fn new(middlewares: Vec<Middleware>) -> Self {
+        MiddlewareChain {
+            middlewares: Rc::new(middlewares),
         }
+    }
+
+    /// Convenience method for single middleware
+    pub fn single(middleware: Middleware) -> Self {
+        Self::new(vec![middleware])
     }
 }
 
-impl<S> ServiceMiddleware<S> for MiddlewareExecutor {
-    type Service = ExecutorMiddlewareInternal<S>;
+impl<S> ServiceMiddleware<S> for MiddlewareChain {
+    type Service = MiddlewareChainInternal<S>;
 
     fn create(&self, service: S) -> Self::Service {
-        ExecutorMiddlewareInternal {
+        MiddlewareChainInternal {
             service,
-            middleware: self.handler.clone(),
+            middlewares: self.middlewares.clone(),
         }
     }
 }
 
-pub struct ExecutorMiddlewareInternal<S> {
+pub struct MiddlewareChainInternal<S> {
     service: S,
-    middleware: Rc<Middleware>,
+    middlewares: Rc<Vec<Middleware>>,
 }
 
-impl<S, Err> Service<web::WebRequest<Err>> for ExecutorMiddlewareInternal<S>
+impl<S, Err> Service<web::WebRequest<Err>> for MiddlewareChainInternal<S>
 where
     S: Service<web::WebRequest<Err>, Response = web::WebResponse, Error = web::Error>,
     Err: web::ErrorRenderer,
@@ -50,40 +55,48 @@ where
         request: web::WebRequest<Err>,
         ctx: ServiceCtx<'_, Self>,
     ) -> Result<Self::Response, Self::Error> {
-        let (req, payload) = request.into_parts();
+        let (mut req, payload) = request.into_parts();
         info!("{} {}", req.method(), req.path());
 
-        match *self.middleware {
-            // execute before calling handler
-            Middleware::Before(ref mid) => match mid.handle(req).await {
-                Ok(req) => {
-                    let request = WebRequest::from_parts(req, payload).unwrap();
-                    debug!("calling http controller -> method...");
-                    ctx.call(&self.service, request).await
-                }
-                Err(err) => Err(Error::from(ResponseError::new(err))),
-            },
+        // Execute all "Before" middlewares in order
+        for middleware in self.middlewares.iter() {
+            if let Middleware::Before(mid) = middleware {
+                let flow = mid
+                    .handle(req)
+                    .await
+                    .map_err(|err| Error::from(ResponseError::new(err)))?;
 
-            // execute after executing handler
-            Middleware::After(ref mid) => {
-                let request = WebRequest::from_parts(req, payload).unwrap();
-                match ctx.call(&self.service, request).await {
-                    Ok(resp) => {
-                        match mid.handle(resp).await {
-                            Ok(resp) => Ok(resp),
-                            // log error and return response generated from controller
-                            Err(err) => {
-                                error!("[middleware-level-error][post-exec] {err:?}");
-                                Err(Error::from(ResponseError::new(err)))
-                            }
-                        }
+                match flow {
+                    MiddlewareFlow::Continue(modified_req) => {
+                        req = modified_req;
                     }
-                    Err(err) => {
-                        error!("[middleware-level-error][post-exec] {err:?}");
-                        Err(err)
+                    MiddlewareFlow::Respond(request, response) => {
+                        return Ok(WebResponse::new(response, request));
                     }
                 }
             }
         }
+
+        // Call the actual handler
+        let request = WebRequest::from_parts(req, payload).unwrap();
+        debug!("calling http controller -> method...");
+        let mut response = ctx.call(&self.service, request).await?;
+
+        // Execute all "After" middlewares in order
+        for middleware in self.middlewares.iter() {
+            if let Middleware::After(mid) = middleware {
+                match mid.handle(response).await {
+                    Ok(modified_resp) => {
+                        response = modified_resp;
+                    }
+                    Err(err) => {
+                        error!("[middleware-chain-error][after] {err:?}");
+                        return Err(Error::from(ResponseError::new(err)));
+                    }
+                }
+            }
+        }
+
+        Ok(response)
     }
 }
