@@ -1,10 +1,13 @@
+use foxtive::Error;
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
+use crate::error::HttpError;
 use crate::http::responder::Responder;
 use crate::http::response::ext::{ResponderExt, ResultResponseExt};
 use crate::http::{HttpResult, IntoAppResult};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
+use ntex::web::HttpResponse;
 use serde::Serialize;
 
 impl<T> ResponderExt for AppResult<T>
@@ -21,6 +24,17 @@ where
 
     fn respond(self) -> HttpResult {
         self.send_result(ResponseCode::Ok)
+    }
+
+    fn respond_undecorated(self) -> HttpResult {
+        self.respond_undecorated_code(ResponseCode::Ok)
+    }
+
+    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
+        match self {
+            Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
+            Err(err) => Err(HttpError::AppError(err)),
+        }
     }
 }
 
@@ -50,9 +64,23 @@ where
             ResponseCode::Ok,
         )
     }
+
+    fn respond_undecorated(self) -> HttpResult {
+        self.respond_undecorated_code(ResponseCode::Ok)
+    }
+
+    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
+        match self {
+            Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
+            Err(err) => Err(HttpError::AppMessage(match err {
+                BlockingError::Error(msg) => msg,
+                BlockingError::Canceled => AppMessage::InternalServerError,
+            })),
+        }
+    }
 }
 
-impl<T> ResponderExt for Result<T, BlockingError<foxtive::Error>>
+impl<T> ResponderExt for Result<T, BlockingError<Error>>
 where
     T: Serialize + Sized,
 {
@@ -67,14 +95,28 @@ where
     fn respond(self) -> HttpResult {
         Ok(Responder::send(self?, ResponseCode::Ok))
     }
+
+    fn respond_undecorated(self) -> HttpResult {
+        self.respond_undecorated_code(ResponseCode::Ok)
+    }
+
+    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
+        match self {
+            Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
+            Err(err) => Err(HttpError::AppError(match err {
+                BlockingError::Error(err) => err,
+                BlockingError::Canceled => AppMessage::InternalServerError.ae()
+            }))
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use foxtive::helpers::json::JsonEmpty;
-    use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
+    use ntex::http::StatusCode;
     use ntex::web::WebResponseError;
     use serde_json::json;
 
@@ -130,6 +172,129 @@ mod tests {
             Ok(_) => panic!("Expected Err, but got Ok"),
             Err(e) => {
                 assert_eq!(e.status_code(), StatusCode::BAD_REQUEST);
+            }
+        }
+    }
+
+    #[test]
+    fn test_app_result_respond_undecorated() {
+        let ok: AppResult<_> = Ok(json!({"key": "value"}));
+        assert_eq!(ok.respond_undecorated().unwrap().status(), StatusCode::OK);
+
+        let err: AppResult<JsonEmpty> = Err(AppMessage::WarningMessage("error").ae());
+        assert_eq!(err.respond_undecorated().unwrap_err().status_code(), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_app_result_respond_undecorated_code() {
+        let ok: AppResult<_> = Ok(json!({"key": "value"}));
+        assert_eq!(ok.respond_undecorated_code(ResponseCode::Created).unwrap().status(), StatusCode::CREATED);
+
+        let err: AppResult<JsonEmpty> = Err(AppMessage::WarningMessage("error").ae());
+        assert_eq!(err.respond_undecorated_code(ResponseCode::Created).unwrap_err().status_code(), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_blocking_app_message_respond_undecorated() {
+        let ok: Result<_, BlockingError<AppMessage>> = Ok(json!({"key": "value"}));
+        assert_eq!(ok.respond_undecorated().unwrap().status(), StatusCode::OK);
+
+        let err: Result<JsonEmpty, BlockingError<AppMessage>> = Err(BlockingError::Error(AppMessage::WarningMessage("error")));
+        assert_eq!(err.respond_undecorated().unwrap_err().status_code(), StatusCode::BAD_REQUEST);
+
+        let canceled: Result<JsonEmpty, BlockingError<AppMessage>> = Err(BlockingError::Canceled);
+        assert_eq!(canceled.respond_undecorated().unwrap_err().status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_blocking_app_message_respond_undecorated_code() {
+        let ok: Result<_, BlockingError<AppMessage>> = Ok(json!({"key": "value"}));
+        assert_eq!(ok.respond_undecorated_code(ResponseCode::Accepted).unwrap().status(), StatusCode::ACCEPTED);
+
+        let err: Result<JsonEmpty, BlockingError<AppMessage>> = Err(BlockingError::Canceled);
+        assert_eq!(err.respond_undecorated_code(ResponseCode::Created).unwrap_err().status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_blocking_error_respond_undecorated() {
+        let data = json!({"key": "value"});
+        let result: Result<_, BlockingError<Error>> = Ok(data.clone());
+
+        let response = result.respond_undecorated();
+        match response {
+            Ok(http_response) => {
+                assert_eq!(http_response.status(), StatusCode::OK);
+            }
+            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
+        }
+    }
+
+    #[test]
+    fn test_blocking_error_respond_undecorated_code() {
+        let data = json!({"key": "value"});
+        let result: Result<_, BlockingError<Error>> = Ok(data.clone());
+
+        let response = result.respond_undecorated_code(ResponseCode::NoContent);
+        match response {
+            Ok(http_response) => {
+                assert_eq!(http_response.status(), StatusCode::NO_CONTENT);
+            }
+            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
+        }
+    }
+
+    #[test]
+    fn test_blocking_error_respond_undecorated_error() {
+        let error = BlockingError::Error(AppMessage::WarningMessage("foxtive error").ae());
+        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
+
+        let response = result.respond_undecorated();
+        match response {
+            Ok(_) => panic!("Expected Err, but got Ok"),
+            Err(e) => {
+                assert_eq!(e.status_code(), StatusCode::BAD_REQUEST);
+            }
+        }
+    }
+
+    #[test]
+    fn test_blocking_error_respond_undecorated_code_error() {
+        let error = BlockingError::Error(AppMessage::WarningMessage("foxtive error").ae());
+        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
+
+        let response = result.respond_undecorated_code(ResponseCode::Created);
+        match response {
+            Ok(_) => panic!("Expected Err, but got Ok"),
+            Err(e) => {
+                assert_eq!(e.status_code(), StatusCode::BAD_REQUEST);
+            }
+        }
+    }
+
+    #[test]
+    fn test_blocking_error_respond_undecorated_canceled() {
+        let error = BlockingError::Canceled;
+        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
+
+        let response = result.respond_undecorated();
+        match response {
+            Ok(_) => panic!("Expected Err, but got Ok"),
+            Err(e) => {
+                assert_eq!(e.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
+    #[test]
+    fn test_blocking_error_respond_undecorated_code_canceled() {
+        let error = BlockingError::Canceled;
+        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
+
+        let response = result.respond_undecorated_code(ResponseCode::Accepted);
+        match response {
+            Ok(_) => panic!("Expected Err, but got Ok"),
+            Err(e) => {
+                assert_eq!(e.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
             }
         }
     }

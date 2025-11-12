@@ -22,4 +22,12 @@ impl<T: Serialize> StructResponseExt for T {
     fn respond(self) -> HttpResult {
         Ok(Responder::send(self, ResponseCode::Ok))
     }
+
+    fn respond_undecorated(self) -> HttpResult {
+        self.respond_undecorated_code(ResponseCode::Ok)
+    }
+
+    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
+        Ok(HttpResponse::build(code.status()).json(&self))
+    }
 }

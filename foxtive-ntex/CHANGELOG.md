@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.23.3 (2025-11-12)
+* feat(responder): add .respond_undecorated() .respond_undecorated_code() to send json resp without decoration
+
 ### 0.23.2 (2025-10-13)
 * fix(cors): buggy cors setter
 
