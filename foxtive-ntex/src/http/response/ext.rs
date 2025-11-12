@@ -18,6 +18,10 @@ pub trait ResponderExt {
     fn respond_msg(self, suc: &str) -> HttpResult;
 
     fn respond(self) -> HttpResult;
+
+    fn respond_undecorated(self) -> HttpResult;
+
+    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult;
 }
 
 pub trait StructResponseExt: Sized {
@@ -28,6 +32,10 @@ pub trait StructResponseExt: Sized {
     fn respond_msg(self, msg: &str) -> HttpResult;
 
     fn respond(self) -> HttpResult;
+
+    fn respond_undecorated(self) -> HttpResult;
+
+    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult;
 }
 
 pub trait OptionResultResponseExt<T> {
