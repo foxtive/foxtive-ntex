@@ -14,6 +14,7 @@ use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
+#[derive(Default)]
 pub struct Multipart {
     pub(crate) file_inputs: HashMap<String, Vec<FileInput>>, // Store multiple files for the same field
     pub(crate) data_inputs: HashMap<String, Vec<DataInput>>, // Store multiple data entries for the same field

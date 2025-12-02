@@ -101,9 +101,6 @@ impl_post_parseable_for_custom_type!(Price);
 mod tests {
     use super::*;
     use foxtive_ntex_multipart::Multipart;
-    use ntex::http::HeaderMap;
-    use ntex::http::Payload;
-    use ntex_multipart::Multipart as NtexMultipart;
 
     #[tokio::test]
     async fn test_all_custom_types() {
@@ -163,12 +160,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_post_or_with_custom_types() {
-        let headers = HeaderMap::new();
-        let payload = Payload::None;
-        let multipart = NtexMultipart::new(&headers, payload);
-        let multipart_instance = Multipart::new(multipart)
-            .await
-            .expect("Failed to create multipart instance");
+        let multipart_instance = Multipart::default();
 
         // Test post_or with default values
         let default_user_id = multipart_instance.post_or("missing_user_id", UserId(0));
