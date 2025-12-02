@@ -139,7 +139,10 @@ pub(crate) mod test {
             return;
         }
 
-        assert!(result.is_err(), "Expected validation to fail when required file field is missing");
+        assert!(
+            result.is_err(),
+            "Expected validation to fail when required file field is missing"
+        );
 
         // Test 5b: Test with field present but too few files
         let mut multipart_instance2 = create_test_multipart();
@@ -169,7 +172,10 @@ pub(crate) mod test {
         );
 
         let result2 = multipart_instance2.validate(validator2).await;
-        assert!(result2.is_err(), "Expected validation to fail when too few files are uploaded");
+        assert!(
+            result2.is_err(),
+            "Expected validation to fail when too few files are uploaded"
+        );
     }
 
     // Test 6: Test retrieval of the first file and data input
