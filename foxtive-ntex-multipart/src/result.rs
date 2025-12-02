@@ -66,7 +66,7 @@ fn send_response(status_code: StatusCode, message: &str) -> HttpResponse {
     let data: Option<String> = None;
     let code = match status_code {
         StatusCode::BAD_REQUEST => "004",
-        StatusCode::INTERNAL_SERVER_ERROR => "010",
+        _ => "010",
     };
 
     HttpResponse::build(status_code).json(&json!({
