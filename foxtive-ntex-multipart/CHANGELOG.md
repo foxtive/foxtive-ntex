@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.8.0 (2025-12-02)
+* refactor(multipart): eagerly process multipart data to avoid issues with passing the multipart to another process
+
 ### 0.7.2 (2025-09-26)
 * fix(validate): method now returns owned instance
 
