@@ -4,7 +4,6 @@ use crate::data_input::DataInput;
 use crate::file_input::FileInput;
 use crate::file_validator::Validator;
 use crate::result::{MultipartError, MultipartResult};
-use foxtive::Error;
 use futures::StreamExt;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
@@ -21,14 +20,14 @@ pub struct Multipart {
 }
 
 impl<Err> FromRequest<Err> for Multipart {
-    type Error = Error;
+    type Error = MultipartError;
 
     async fn from_request(
         req: &HttpRequest,
         payload: &mut Payload,
     ) -> Result<Multipart, Self::Error> {
         let multipart = NtexMultipart::new(req.headers(), payload.take());
-        Multipart::new(multipart).await.map_err(Error::msg)
+        Multipart::new(multipart).await
     }
 }
 
