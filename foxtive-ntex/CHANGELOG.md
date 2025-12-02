@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.24.1 (2025-12-02)
+* bump(crates): to their latest min versions
+
 ### 0.24.0 (2025-11-12)
 * refactor(middleware): replace MiddlewareExecutor with unified MiddlewareChain
 
