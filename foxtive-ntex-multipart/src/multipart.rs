@@ -1,49 +1,51 @@
-use std::collections::HashMap;
-use std::convert::Infallible;
-use std::path::Path;
-
 use crate::content_disposition::ContentDisposition;
 use crate::contract::PostParseable;
 use crate::data_input::DataInput;
 use crate::file_input::FileInput;
 use crate::file_validator::Validator;
 use crate::result::{MultipartError, MultipartResult};
+use foxtive::Error;
 use futures::StreamExt;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
 use ntex_multipart::Multipart as NtexMultipart;
+use std::collections::HashMap;
+use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 pub struct Multipart {
-    pub(crate) multipart: NtexMultipart,
     pub(crate) file_inputs: HashMap<String, Vec<FileInput>>, // Store multiple files for the same field
     pub(crate) data_inputs: HashMap<String, Vec<DataInput>>, // Store multiple data entries for the same field
 }
 
 impl<Err> FromRequest<Err> for Multipart {
-    type Error = Infallible;
+    type Error = Error;
 
     async fn from_request(
         req: &HttpRequest,
         payload: &mut Payload,
-    ) -> Result<Multipart, Infallible> {
+    ) -> Result<Multipart, Self::Error> {
         let multipart = NtexMultipart::new(req.headers(), payload.take());
-        Ok(Multipart::new(multipart).await)
+        Multipart::new(multipart).await.map_err(Error::msg)
     }
 }
 
 impl Multipart {
-    pub async fn new(multipart: NtexMultipart) -> Multipart {
+    pub async fn new(multipart: NtexMultipart) -> MultipartResult<Multipart> {
         Self {
-            multipart,
             file_inputs: Default::default(),
             data_inputs: Default::default(),
         }
+        .process(multipart)
+        .await
     }
 
-    pub async fn process(&mut self) -> Result<&mut Multipart, MultipartError> {
-        while let Some(item) = self.multipart.next().await {
+    pub async fn process(
+        mut self,
+        mut multipart: NtexMultipart,
+    ) -> Result<Multipart, MultipartError> {
+        while let Some(item) = multipart.next().await {
             let mut field = item.map_err(MultipartError::NtexError)?;
 
             if let Some(content_disposition) = field.headers().get("content-disposition") {
@@ -214,9 +216,13 @@ impl Multipart {
 
     /// Take ownership of the first data input for a given field
     pub fn into_first_data(mut self, field: &str) -> Option<DataInput> {
-        self.data_inputs
-            .get_mut(field)
-            .and_then(|inputs| if inputs.is_empty() { None } else { Some(inputs.remove(0)) })
+        self.data_inputs.get_mut(field).and_then(|inputs| {
+            if inputs.is_empty() {
+                None
+            } else {
+                Some(inputs.remove(0))
+            }
+        })
     }
 
     /// Take ownership of the first data input for a given field.
@@ -233,9 +239,13 @@ impl Multipart {
 
     /// Take ownership of the first file for a given field
     pub fn into_first_file(mut self, field: &str) -> Option<FileInput> {
-        self.file_inputs
-            .get_mut(field)
-            .and_then(|files| if files.is_empty() { None } else { Some(files.remove(0)) })
+        self.file_inputs.get_mut(field).and_then(|files| {
+            if files.is_empty() {
+                None
+            } else {
+                Some(files.remove(0))
+            }
+        })
     }
 
     /// Take ownership of the first file for a given field.
@@ -246,8 +256,7 @@ impl Multipart {
     }
 
     /// Validate all files against the provided rules
-    pub async fn validate(mut self, validator: Validator) -> MultipartResult<Self> {
-        self.process().await?;
+    pub async fn validate(self, validator: Validator) -> MultipartResult<Self> {
         validator.validate(&self.file_inputs)?;
         Ok(self)
     }

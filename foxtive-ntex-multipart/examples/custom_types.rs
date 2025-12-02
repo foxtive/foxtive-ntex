@@ -166,7 +166,9 @@ mod tests {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let multipart_instance = Multipart::new(multipart).await;
+        let multipart_instance = Multipart::new(multipart)
+            .await
+            .expect("Failed to create multipart instance");
 
         // Test post_or with default values
         let default_user_id = multipart_instance.post_or("missing_user_id", UserId(0));

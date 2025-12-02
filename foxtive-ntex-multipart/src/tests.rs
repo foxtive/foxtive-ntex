@@ -16,7 +16,7 @@ mod test {
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
 
-        let multipart_instance = Multipart::new(multipart).await;
+        let multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         assert!(multipart_instance.all_data().is_empty());
         assert!(multipart_instance.all_files().is_empty());
@@ -52,7 +52,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Adding multiple data entries for the same field
         multipart_instance
@@ -83,7 +83,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Adding multiple files for the same field
         multipart_instance
@@ -124,7 +124,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let multipart_instance = Multipart::new(multipart).await;
+        let multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // No files added, so validation should fail
         let validator = Validator::new().add_rule(
@@ -147,7 +147,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Adding data and files
         multipart_instance
@@ -188,7 +188,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let multipart_instance = Multipart::new(multipart).await;
+        let multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Verify empty file field (no files should be found)
         assert!(multipart_instance.files("empty_file").is_none());
@@ -200,7 +200,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Adding various typed data
         multipart_instance
@@ -259,7 +259,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let multipart_instance = Multipart::new(multipart).await;
+        let multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Test with missing field - should return default
         let default_price: i32 = multipart_instance.post_or("missing_price", 50);
@@ -276,7 +276,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Add some data
         multipart_instance
@@ -303,7 +303,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Add invalid data for parsing
         multipart_instance
@@ -343,7 +343,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Add some data - some fields present, some missing, some empty
         multipart_instance
@@ -403,7 +403,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Add test data for various types
         let test_data = vec![
@@ -527,7 +527,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Add test data
         multipart_instance
@@ -627,7 +627,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Simulate form data from a real e-commerce application
         let form_data = vec![
@@ -756,7 +756,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Add valid UUID test data
         let test_uuid_str = "550e8400-e29b-41d4-a716-446655440000";
@@ -796,7 +796,7 @@ mod test {
         let headers = HeaderMap::new();
         let payload = Payload::None;
         let multipart = NtexMultipart::new(&headers, payload);
-        let mut multipart_instance = Multipart::new(multipart).await;
+        let mut multipart_instance = Multipart::new(multipart).await.expect("Failed to create multipart instance");
 
         // Test various UUID formats and use cases
         let uuids = vec![
