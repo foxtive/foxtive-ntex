@@ -1,7 +1,8 @@
+use std::borrow::Cow;
 use ntex::http::StatusCode;
 
 pub trait ResponseCodeContract: Clone {
-    fn code(&self) -> &str;
+    fn code(&self) -> Cow<'static, str>;
 
     fn status(&self) -> StatusCode;
 

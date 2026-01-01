@@ -35,7 +35,7 @@ mod tests {
         let message = Some("Operation successful".to_string());
 
         let response =
-            JsonMessage::make(data.clone(), ResponseCode::Ok.code(), true, message.clone());
+            JsonMessage::make(data.clone(), &ResponseCode::Ok.code(), true, message.clone());
 
         assert!(response.success);
         assert_eq!(response.code, ResponseCode::Ok.code());
@@ -51,7 +51,7 @@ mod tests {
 
         let response = JsonMessage::make(
             data.clone(),
-            ResponseCode::InternalServerError.code(),
+            &ResponseCode::InternalServerError.code(),
             false,
             message.clone(),
         );

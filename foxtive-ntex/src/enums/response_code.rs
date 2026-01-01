@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::contracts::ResponseCodeContract;
 use ntex::http::StatusCode;
 use tracing::error;
@@ -21,22 +22,22 @@ pub enum ResponseCode {
 }
 
 impl ResponseCodeContract for ResponseCode {
-    fn code(&self) -> &str {
+    fn code(&self) -> Cow<'static, str> {
         match self {
-            ResponseCode::Ok => "000",
-            ResponseCode::Created => "001",
-            ResponseCode::Accepted => "002",
-            ResponseCode::NoContent => "003",
-            ResponseCode::BadRequest => "004",
-            ResponseCode::Unauthorized => "005",
-            ResponseCode::PaymentRequired => "006",
-            ResponseCode::Forbidden => "007",
-            ResponseCode::NotFound => "008",
-            ResponseCode::Conflict => "009",
-            ResponseCode::InternalServerError => "010",
-            ResponseCode::ServiceUnavailable => "011",
-            ResponseCode::NotImplemented => "012",
-            ResponseCode::Unknown(status) => status.as_u16().to_string().as_str(),
+            ResponseCode::Ok => Cow::Borrowed("000"),
+            ResponseCode::Created => Cow::Borrowed("001"),
+            ResponseCode::Accepted => Cow::Borrowed("002"),
+            ResponseCode::NoContent => Cow::Borrowed("003"),
+            ResponseCode::BadRequest => Cow::Borrowed("004"),
+            ResponseCode::Unauthorized => Cow::Borrowed("005"),
+            ResponseCode::PaymentRequired => Cow::Borrowed("006"),
+            ResponseCode::Forbidden => Cow::Borrowed("007"),
+            ResponseCode::NotFound => Cow::Borrowed("008"),
+            ResponseCode::Conflict => Cow::Borrowed("009"),
+            ResponseCode::InternalServerError => Cow::Borrowed("010"),
+            ResponseCode::ServiceUnavailable => Cow::Borrowed("011"),
+            ResponseCode::NotImplemented => Cow::Borrowed("012"),
+            ResponseCode::Unknown(status) => Cow::Owned(status.as_u16().to_string()),
         }
     }
 
@@ -75,7 +76,7 @@ impl ResponseCodeContract for ResponseCode {
             "011" => ResponseCode::ServiceUnavailable,
             "012" => ResponseCode::NotImplemented,
             _ => {
-                error!("Unknown response code: {}");
+                error!("Unknown response code: {code}");
                 ResponseCode::InternalServerError
             }
         }
