@@ -1,5 +1,6 @@
 use crate::contracts::ResponseCodeContract;
 use ntex::http::StatusCode;
+use tracing::error;
 
 #[derive(Clone)]
 pub enum ResponseCode {
@@ -16,6 +17,7 @@ pub enum ResponseCode {
     InternalServerError,
     ServiceUnavailable,
     NotImplemented,
+    Unknown(StatusCode),
 }
 
 impl ResponseCodeContract for ResponseCode {
@@ -34,6 +36,7 @@ impl ResponseCodeContract for ResponseCode {
             ResponseCode::InternalServerError => "010",
             ResponseCode::ServiceUnavailable => "011",
             ResponseCode::NotImplemented => "012",
+            ResponseCode::Unknown(status) => status.as_u16().to_string().as_str(),
         }
     }
 
@@ -52,6 +55,7 @@ impl ResponseCodeContract for ResponseCode {
             ResponseCode::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             ResponseCode::ServiceUnavailable => StatusCode::SERVICE_UNAVAILABLE,
             ResponseCode::NotImplemented => StatusCode::NOT_IMPLEMENTED,
+            ResponseCode::Unknown(status) => *status,
         }
     }
 
@@ -70,7 +74,10 @@ impl ResponseCodeContract for ResponseCode {
             "010" => ResponseCode::InternalServerError,
             "011" => ResponseCode::ServiceUnavailable,
             "012" => ResponseCode::NotImplemented,
-            _ => panic!("Invalid response code"),
+            _ => {
+                error!("Unknown response code: {}");
+                ResponseCode::InternalServerError
+            }
         }
     }
 
@@ -89,7 +96,7 @@ impl ResponseCodeContract for ResponseCode {
             StatusCode::INTERNAL_SERVER_ERROR => ResponseCode::InternalServerError,
             StatusCode::SERVICE_UNAVAILABLE => ResponseCode::ServiceUnavailable,
             StatusCode::NOT_IMPLEMENTED => ResponseCode::NotImplemented,
-            _ => panic!("Invalid status code"),
+            _ => ResponseCode::Unknown(status),
         }
     }
 }
