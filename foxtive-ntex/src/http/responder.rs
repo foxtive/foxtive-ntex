@@ -15,7 +15,7 @@ impl Responder {
         D: Serialize,
     {
         Self::respond(
-            JsonMessage::make(data, code.code(), code.success(), Some(msg.to_string())),
+            JsonMessage::make(data, &code.code(), code.success(), Some(msg.to_string())),
             code.status(),
         )
     }
@@ -26,7 +26,7 @@ impl Responder {
         D: Serialize,
     {
         Self::respond(
-            JsonMessage::make(data, code.code(), code.success(), None),
+            JsonMessage::make(data, &code.code(), code.success(), None),
             code.status(),
         )
     }
@@ -71,7 +71,7 @@ impl Responder {
     pub fn message<C: ResponseCodeContract>(msg: &str, code: C) -> Response {
         let message = JsonMessage::make(
             json_empty(),
-            code.code(),
+            &code.code(),
             code.success(),
             Some(msg.to_owned()),
         );
