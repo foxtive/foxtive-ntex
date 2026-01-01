@@ -34,8 +34,12 @@ mod tests {
         let data = json!({"key": "value"});
         let message = Some("Operation successful".to_string());
 
-        let response =
-            JsonMessage::make(data.clone(), &ResponseCode::Ok.code(), true, message.clone());
+        let response = JsonMessage::make(
+            data.clone(),
+            &ResponseCode::Ok.code(),
+            true,
+            message.clone(),
+        );
 
         assert!(response.success);
         assert_eq!(response.code, ResponseCode::Ok.code());
