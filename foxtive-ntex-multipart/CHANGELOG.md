@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.9.0 (2025-01-15)
+* bump(crates): to their latest min versions
+
 ### 0.8.0 (2025-12-02)
 * refactor(multipart): eagerly process multipart data to avoid issues with passing the multipart to another process
 

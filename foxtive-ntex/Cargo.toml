@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex"
-version = "0.24.2"
+version = "0.25.0"
 edition = "2024"
 license = "MIT"
 description = "Micro-Framework Based on Ntex"
@@ -20,11 +20,11 @@ multipart = ["foxtive-ntex-multipart"]
 [dependencies]
 thiserror = { workspace = true }
 tracing = { version = "0.1.44" }
-uuid = { version = "1.18.1", default-features = false }
+uuid = { version = "1.19.0", default-features = false }
 serde = { version = "1.0.228", default-features = false }
-tokio = { version = "1.48.0", default-features = false }
-chrono = { version = "0.4.42", default-features = false, features = ["serde"] }
-serde_json = { version = "1.0.148", default-features = false }
+tokio = { version = "1.49.0", default-features = false }
+chrono = { version = "0.4.43", default-features = false, features = ["serde"] }
+serde_json = { version = "1.0.149", default-features = false }
 futures-util = { version = "0.3.31", default-features = false }
 ntex = { workspace = true }
 ntex-files = { version = "2.1.0", optional = true }
@@ -38,5 +38,5 @@ foxtive-ntex-multipart = { version = "0", default-features = false, optional = t
 mime = "0.3.17"
 
 [dev-dependencies]
-tokio = { version = "1.48.0", features = ["test-util", "macros"] }
+tokio = { version = "1.49.0", features = ["test-util", "macros"] }
 ntex = { workspace = true, default-features = false, features = ["tokio"] }

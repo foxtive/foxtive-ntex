@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex-multipart"
-version = "0.8.2"
+version = "0.9.0"
 edition = "2024"
 license = "MIT"
 description = "Library For Handling File Uploads Based on Ntex"
@@ -17,15 +17,15 @@ ntex-multipart = "2.0.0"
 ntex = { workspace = true }
 foxtive = { workspace = true }
 thiserror = { workspace = true }
-serde_json = "1.0.145"
+serde_json = "1.0.149"
 uuid = { version = "1.19.0", default-features = false, features = ["v4"], optional = true }
-tokio = { version = "1.48.0", default-features = false, features = [
+tokio = { version = "1.49.0", default-features = false, features = [
     "fs",
     "io-util",
 ] }
 
 [dev-dependencies]
-tokio = { version = "1.47.1", features = ["test-util", "macros"] }
+tokio = { version = "1.49.0", features = ["test-util", "macros"] }
 
 [[example]]
 name = "uuid"
