@@ -731,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.25.0"
+version = "0.25.1"
 dependencies = [
  "chrono",
  "foxtive 0.20.0",
