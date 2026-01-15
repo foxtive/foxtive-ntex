@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.25.1 (2025-01-15)
+* bump(crates): to their latest min versions
+
 ### 0.25.0 (2025-01-15)
 * bump(crates): to their latest min versions
 
