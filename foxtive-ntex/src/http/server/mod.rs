@@ -4,14 +4,15 @@ mod config;
 pub use config::StaticFileConfig;
 pub use config::{JsonConfig, ServerConfig};
 
-use crate::FoxtiveNtexState;
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger};
-use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
-use foxtive::Error;
+use crate::setup::{make_ntex_state, FoxtiveNtexSetup};
+use crate::FoxtiveNtexState;
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;
 use foxtive::setup::trace::Tracing;
-use ntex::web;
+use foxtive::Error;
+use ntex::io::IoConfig;
+use ntex::{web, SharedCfg};
 use std::future::Future;
 use tracing::{debug, error};
 
@@ -57,7 +58,14 @@ where
     let boot = config.boot_thread;
     let ntex_json_config = web::types::JsonConfig::default().limit(json_config.limit);
 
-    web::HttpServer::new(move || {
+    let shared_config = SharedCfg::new("WEB").add(
+        IoConfig::new()
+            .set_keepalive_timeout(config.keep_alive)
+            .set_connect_timeout(config.client_timeout)
+            .set_disconnect_timeout(config.client_disconnect),
+    );
+
+    web::HttpServer::new(async move || {
         let routes = boot();
 
         let app = web::App::new()
@@ -86,11 +94,12 @@ where
 
         app
     })
+    .config(shared_config)
     .backlog(config.backlog)
     .workers(config.workers)
     .maxconn(config.max_connections)
     .maxconnrate(config.max_connections_rate)
-    .keep_alive(config.keep_alive)
+    // .keep_alive(config.keep_alive)
     .bind((config.host, config.port))?
     .run()
     .await

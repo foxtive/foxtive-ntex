@@ -24,10 +24,10 @@ impl MiddlewareChain {
     }
 }
 
-impl<S> ServiceMiddleware<S> for MiddlewareChain {
+impl<S, Cfg> ServiceMiddleware<S, Cfg> for MiddlewareChain {
     type Service = MiddlewareChainInternal<S>;
 
-    fn create(&self, service: S) -> Self::Service {
+    fn create(&self, service: S, _cfg: Cfg) -> Self::Service {
         MiddlewareChainInternal {
             service,
             middlewares: self.middlewares.clone(),
