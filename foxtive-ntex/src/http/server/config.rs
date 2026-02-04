@@ -1,8 +1,7 @@
-use crate::http::Method;
 use crate::http::kernel::Route;
-use foxtive::setup::FoxtiveSetup;
+use crate::http::Method;
 use foxtive::setup::trace::Tracing;
-use ntex::http::KeepAlive;
+use foxtive::setup::FoxtiveSetup;
 use ntex::time::Seconds;
 use std::sync::Arc;
 
@@ -85,7 +84,7 @@ pub struct ServerConfig {
 
     pub(crate) client_disconnect: Seconds,
 
-    pub(crate) keep_alive: KeepAlive,
+    pub(crate) keep_alive: Seconds,
 
     pub(crate) backlog: i32,
 
@@ -121,7 +120,7 @@ impl ServerConfig {
             max_connections_rate: 256,
             client_timeout: Seconds(3),
             client_disconnect: Seconds(5),
-            keep_alive: KeepAlive::Timeout(Seconds(5)),
+            keep_alive: Seconds(5),
             backlog: 2048,
             app: "foxtive".to_string(),
             foxtive_setup: setup,
@@ -182,7 +181,7 @@ impl ServerConfig {
     /// Set server keep-alive setting.
     ///
     /// By default keep alive is set to a 5 seconds.
-    pub fn keep_alive(mut self, keep_alive: KeepAlive) -> Self {
+    pub fn keep_alive(mut self, keep_alive: Seconds) -> Self {
         self.keep_alive = keep_alive;
         self
     }
