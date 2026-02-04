@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.10.0 (2026-02-04)
+* bump(ntex): to version 3.0.1
+
 ### 0.9.0 (2025-01-15)
 * bump(crates): to their latest min versions
 
