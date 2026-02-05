@@ -717,6 +717,27 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
+ "dotenv",
+ "futures-util",
+ "http",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "foxtive"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bfa9007e8aaf7e342a3aed7758f4086861a637265d0e33ff5e53b930f9de031"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
  "diesel",
  "dotenv",
  "futures-util",
@@ -737,8 +758,8 @@ name = "foxtive-ntex"
 version = "0.26.0"
 dependencies = [
  "chrono",
- "foxtive",
- "foxtive-ntex-multipart 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "foxtive 0.22.0",
+ "foxtive-ntex-multipart 0.10.0",
  "futures-util",
  "jsonwebtoken",
  "mime",
@@ -758,8 +779,23 @@ dependencies = [
 [[package]]
 name = "foxtive-ntex-multipart"
 version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dda6dfd241e8d62f1368cd27e6b4386394f33a46569688cc27aa7b7f85bc98e"
 dependencies = [
- "foxtive",
+ "foxtive 0.20.0",
+ "futures",
+ "ntex",
+ "ntex-multipart",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "foxtive-ntex-multipart"
+version = "0.11.0"
+dependencies = [
+ "foxtive 0.22.0",
  "futures",
  "ntex",
  "ntex-multipart",
@@ -767,21 +803,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "uuid",
-]
-
-[[package]]
-name = "foxtive-ntex-multipart"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dda6dfd241e8d62f1368cd27e6b4386394f33a46569688cc27aa7b7f85bc98e"
-dependencies = [
- "foxtive",
- "futures",
- "ntex",
- "ntex-multipart",
- "serde_json",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -2403,9 +2424,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.46"
+version = "0.3.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9da98b7d9b7dad93488a84b8248efc35352b0b2657397d4167e7ad67e5d535e5"
+checksum = "743bd48c283afc0388f9b8827b976905fb217ad9e647fae3a379a9283c4def2c"
 dependencies = [
  "deranged",
  "itoa",
@@ -2424,9 +2445,9 @@ checksum = "7694e1cfe791f8d31026952abf09c69ca6f6fa4e1a1229e18988f06a04a12dca"
 
 [[package]]
 name = "time-macros"
-version = "0.2.26"
+version = "0.2.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78cc610bac2dcee56805c99642447d4c5dbde4d01f752ffea0199aee1f601dc4"
+checksum = "2e70e4c5a0e0a8a4823ad65dfe1a6930e4f4d756dcd9dd7939022b5e8c501215"
 dependencies = [
  "num-conv",
  "time-core",
