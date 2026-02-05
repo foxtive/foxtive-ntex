@@ -8,4 +8,4 @@ members = [
 [workspace.dependencies]
 thiserror = { version = "2.0.18", default-features = false }
 ntex = { version = "3.0.1", default-features = false }
-foxtive = { version = "0.20.0", default-features = false }
+foxtive = { version = "0.22.0", default-features = false }
