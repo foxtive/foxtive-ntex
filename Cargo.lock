@@ -710,27 +710,6 @@ dependencies = [
 
 [[package]]
 name = "foxtive"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d613a1eca0c3d349589110856cc0227de5a9587ae7c5ff3f2b5a4fb0224905c"
-dependencies = [
- "anyhow",
- "async-trait",
- "chrono",
- "dotenv",
- "futures-util",
- "http",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "foxtive"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bfa9007e8aaf7e342a3aed7758f4086861a637265d0e33ff5e53b930f9de031"
@@ -755,11 +734,11 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex"
-version = "0.26.0"
+version = "0.27.0"
 dependencies = [
  "chrono",
- "foxtive 0.22.0",
- "foxtive-ntex-multipart 0.10.0",
+ "foxtive",
+ "foxtive-ntex-multipart 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util",
  "jsonwebtoken",
  "mime",
@@ -778,24 +757,9 @@ dependencies = [
 
 [[package]]
 name = "foxtive-ntex-multipart"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dda6dfd241e8d62f1368cd27e6b4386394f33a46569688cc27aa7b7f85bc98e"
-dependencies = [
- "foxtive 0.20.0",
- "futures",
- "ntex",
- "ntex-multipart",
- "serde_json",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "foxtive-ntex-multipart"
 version = "0.11.0"
 dependencies = [
- "foxtive 0.22.0",
+ "foxtive",
  "futures",
  "ntex",
  "ntex-multipart",
@@ -803,6 +767,21 @@ dependencies = [
  "thiserror",
  "tokio",
  "uuid",
+]
+
+[[package]]
+name = "foxtive-ntex-multipart"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7f5c97922b18361ffad0487962ee359b2a667b6070f7ad0edb9affb93cf1e8a"
+dependencies = [
+ "foxtive",
+ "futures",
+ "ntex",
+ "ntex-multipart",
+ "serde_json",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
