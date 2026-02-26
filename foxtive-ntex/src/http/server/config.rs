@@ -3,7 +3,10 @@ use crate::http::kernel::Route;
 use foxtive::setup::FoxtiveSetup;
 use foxtive::setup::trace::Tracing;
 use ntex::time::Seconds;
+use std::pin::Pin;
 use std::sync::Arc;
+
+pub type ShutdownSignalHandler = Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
 
 /// Configuration for serving static files.
 ///
@@ -108,6 +111,10 @@ pub struct ServerConfig {
     pub(crate) allowed_methods: Vec<Method>,
 
     pub(crate) boot_thread: Arc<dyn Fn() -> Vec<Route> + Send + Sync>,
+
+    pub(crate) on_shutdown: Option<ShutdownSignalHandler>,
+
+    pub(crate) shutdown_signal: Option<Pin<Box<dyn Future<Output = ()> + Send>>>,
 }
 
 impl ServerConfig {
@@ -132,6 +139,8 @@ impl ServerConfig {
             boot_thread: Arc::new(Vec::new),
             tracing: None,
             json_config: None,
+            on_shutdown: None,
+            shutdown_signal: None,
         }
     }
 
@@ -263,6 +272,38 @@ impl ServerConfig {
 
     pub fn json_config(mut self, json_config: JsonConfig) -> Self {
         self.json_config = Some(json_config);
+        self
+    }
+
+    /// Sets a custom shutdown handler to be called when the application is shutting down.
+    ///
+    /// This method allows you to provide a future that will be awaited during shutdown.
+    /// It is typically used to perform cleanup tasks like closing database connections,
+    /// flushing logs, or other async teardown operations.
+    ///
+    /// **Note:** If a custom `shutdown_signal` is also provided using [`shutdown_signal`],
+    /// that will take precedence over this handler, and this `on_shutdown` handler will
+    /// **not** be executed.
+    ///
+    pub fn on_shutdown<F>(mut self, func: F) -> Self
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        self.on_shutdown = Some(Box::pin(func));
+        self
+    }
+
+    /// Sets a custom shutdown signal handler that determines when the application should begin shutting down.
+    ///
+    /// This method allows you to provide a future that, when resolved, triggers the application shutdown.
+    /// It is typically used to listen for signals like `Ctrl+C` or system termination requests (`SIGTERM`).
+    ///
+    /// If this shutdown signal is provided, it will override any handler set using [`on_shutdown`].
+    pub fn shutdown_signal<F>(mut self, func: F) -> Self
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        self.shutdown_signal = Some(Box::pin(func));
         self
     }
 }
