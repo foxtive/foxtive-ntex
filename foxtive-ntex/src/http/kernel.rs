@@ -35,7 +35,7 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
             if !route.middlewares.is_empty() {
                 config.service(
                     scope
-                        .wrap(MiddlewareChain::new(route.middlewares.clone()))
+                        .middleware(MiddlewareChain::new(route.middlewares.clone()))
                         .configure(controller.handler)
                 );
             } else {

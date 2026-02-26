@@ -3,6 +3,9 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.2.0 (2026-02-04)
+* bump(foxtuve): to version 0.23.0
+
 ### 0.26.0 (2026-02-04)
 * bump(ntex): to version 3.0.1
 

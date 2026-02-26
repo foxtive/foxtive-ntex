@@ -65,15 +65,15 @@ where
             .set_disconnect_timeout(config.client_disconnect),
     );
 
-    web::HttpServer::new(async move || {
+    let server = web::HttpServer::new(async move || {
         let routes = boot();
 
         let app = web::App::new()
             .state(ntex_json_config.clone())
             .state(app_state.clone())
             .configure(|cfg| register_routes(cfg, routes))
-            .wrap(setup_logger())
-            .wrap(
+            .middleware(setup_logger())
+            .middleware(
                 setup_cors(
                     app_state.allowed_origins.clone(),
                     app_state.allowed_methods.clone(),
@@ -101,7 +101,62 @@ where
     .maxconnrate(config.max_connections_rate)
     // .keep_alive(config.keep_alive)
     .bind((config.host, config.port))?
-    .run()
-    .await
-    .map_err(Error::from)
+    .run();
+
+    // clone server handle
+    let srv = server.clone();
+
+    // use provided shutdown signal or default
+    let shutdown_signal = config
+        .shutdown_signal
+        .unwrap_or_else(default_shutdown_signal);
+
+    // spawn shutdown listener
+    ntex::rt::spawn(async move {
+        shutdown_signal.await;
+
+        debug!("Shutdown signal received");
+
+        // graceful stop
+        srv.stop(true).await;
+    });
+
+    // await server
+    server.await.map_err(Error::from)?;
+
+    // AFTER server fully stops, run cleanup handler
+    if let Some(on_shutdown) = config.on_shutdown {
+        debug!("Running shutdown handler");
+        on_shutdown.await;
+    }
+
+    Ok(())
+}
+
+use std::pin::Pin;
+
+pub fn default_shutdown_signal() -> Pin<Box<dyn Future<Output = ()> + Send>> {
+    Box::pin(async {
+        let ctrl_c = async {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("failed to listen for ctrl_c");
+        };
+
+        #[cfg(unix)]
+        let terminate = async {
+            use tokio::signal::unix::{signal, SignalKind};
+            let mut sigterm =
+                signal(SignalKind::terminate()).expect("failed to listen for SIGTERM");
+            sigterm.recv().await;
+        };
+
+        #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+        tokio::select! {
+            _ = ctrl_c => {},
+            _ = terminate => {},
+        }
+    })
 }
