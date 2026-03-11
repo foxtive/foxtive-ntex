@@ -57,7 +57,7 @@ impl JsonBody {
     pub fn deserialize<T: DeserializeOwned>(&self) -> AppResult<T> {
         serde_json::from_str::<T>(&self.json).map_err(|e| {
             error!("Error deserializing JSON: {e:?}");
-            HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string())).into_app_error()
+            HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error()
         })
     }
 
@@ -118,7 +118,7 @@ impl<Err> FromRequest<Err> for JsonBody {
 
             // Check if we've exceeded the limit
             if total_size > max_size {
-                return Err(HttpError::AppMessage(AppMessage::WarningMessage(
+                return Err(HttpError::AppMessage(AppMessage::invalid(
                     "Json body exceeded maximum size",
                 )));
             }

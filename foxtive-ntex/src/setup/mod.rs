@@ -1,7 +1,7 @@
+use foxtive::internal_server_error;
 use crate::FOXTIVE_NTEX;
 use crate::http::Method;
 use crate::http::server::JsonConfig;
-use foxtive::prelude::AppMessage;
 use foxtive::results::AppResult;
 use foxtive::setup::FoxtiveSetup;
 use state::FoxtiveNtexState;
@@ -23,7 +23,7 @@ pub async fn make_ntex_state(setup: FoxtiveNtexSetup) -> AppResult<FoxtiveNtexSt
     foxtive::setup::make_state(setup.foxtive_setup).await?;
 
     FOXTIVE_NTEX.set(app.clone()).map_err(|_| {
-        AppMessage::InternalServerErrorMessage("failed to set up foxtive-ntex").ae()
+        internal_server_error!("failed to set up foxtive-ntex")
     })?;
 
     Ok(app)

@@ -1,8 +1,8 @@
 use crate::error::HttpError;
 use foxtive::prelude::{AppMessage, AppResult};
-use jsonwebtoken::{DecodingKey, TokenData, Validation, decode};
-use ntex::http::Payload;
+use jsonwebtoken::{decode, DecodingKey, TokenData, Validation};
 use ntex::http::header;
+use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
 use tracing::{debug, error};
@@ -38,10 +38,7 @@ impl JwtAuthToken {
             Ok(TokenData { claims, .. }) => Ok(claims),
             Err(e) => {
                 error!("JWT decode error: {e:?}");
-                Err(
-                    HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string()))
-                        .into_app_error(),
-                )
+                Err(HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error())
             }
         }
     }
@@ -80,8 +77,8 @@ impl<Err> FromRequest<Err> for JwtAuthToken {
                     .map(|s| s.trim())
             })
             .ok_or_else(|| {
-                HttpError::AppMessage(AppMessage::WarningMessageString(
-                    "Missing or malformed Authorization header".to_string(),
+                HttpError::AppMessage(AppMessage::invalid(
+                    "Missing or malformed Authorization header",
                 ))
                 .into_app_error()
             })?;
@@ -98,8 +95,8 @@ impl<Err> FromRequest<Err> for JwtAuthToken {
 mod tests {
     use super::*;
     use foxtive::helpers::jwt::Algorithm;
-    use jsonwebtoken::{EncodingKey, Header, encode};
-    use ntex::http::{Payload, header};
+    use jsonwebtoken::{encode, EncodingKey, Header};
+    use ntex::http::{header, Payload};
     use ntex::web::test::TestRequest;
     use serde::{Deserialize, Serialize};
 

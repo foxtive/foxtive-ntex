@@ -4,7 +4,7 @@ use crate::error::HttpError;
 use crate::http::responder::Responder;
 use crate::http::response::ext::{ResponderExt, ResultResponseExt};
 use crate::http::{HttpResult, IntoAppResult};
-use foxtive::Error;
+use foxtive::{internal_server_error, Error};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
 use ntex::web::HttpResponse;
@@ -72,9 +72,9 @@ where
     fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
         match self {
             Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
-            Err(err) => Err(HttpError::AppMessage(match err {
-                BlockingError::Error(msg) => msg,
-                BlockingError::Canceled => AppMessage::InternalServerError,
+            Err(err) => Err(HttpError::AppError(match err {
+                BlockingError::Error(msg) => msg.into_anyhow(),
+                BlockingError::Canceled => internal_server_error!("Internal Server Error"),
             })),
         }
     }
@@ -105,7 +105,7 @@ where
             Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
             Err(err) => Err(HttpError::AppError(match err {
                 BlockingError::Error(err) => err,
-                BlockingError::Canceled => AppMessage::InternalServerError.ae(),
+                BlockingError::Canceled => internal_server_error!("Internal Server Error"),
             })),
         }
     }
@@ -115,6 +115,7 @@ where
 mod tests {
     use super::*;
     use foxtive::helpers::json::JsonEmpty;
+    use foxtive::invalid;
     use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
     use ntex::web::WebResponseError;
@@ -164,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_respond_msg_error() {
-        let error = BlockingError::Error(AppMessage::WarningMessage("invalid"));
+        let error = BlockingError::Error(AppMessage::invalid("invalid"));
         let result: Result<JsonEmpty, BlockingError<AppMessage>> = Err(error);
 
         let result = result.respond_msg("Error occurred");
@@ -181,7 +182,7 @@ mod tests {
         let ok: AppResult<_> = Ok(json!({"key": "value"}));
         assert_eq!(ok.respond_undecorated().unwrap().status(), StatusCode::OK);
 
-        let err: AppResult<JsonEmpty> = Err(AppMessage::WarningMessage("error").ae());
+        let err: AppResult<JsonEmpty> = Err(invalid!("error"));
         assert_eq!(
             err.respond_undecorated().unwrap_err().status_code(),
             StatusCode::BAD_REQUEST
@@ -198,7 +199,7 @@ mod tests {
             StatusCode::CREATED
         );
 
-        let err: AppResult<JsonEmpty> = Err(AppMessage::WarningMessage("error").ae());
+        let err: AppResult<JsonEmpty> = Err(invalid!("error"));
         assert_eq!(
             err.respond_undecorated_code(ResponseCode::Created)
                 .unwrap_err()
@@ -213,7 +214,7 @@ mod tests {
         assert_eq!(ok.respond_undecorated().unwrap().status(), StatusCode::OK);
 
         let err: Result<JsonEmpty, BlockingError<AppMessage>> =
-            Err(BlockingError::Error(AppMessage::WarningMessage("error")));
+            Err(BlockingError::Error(AppMessage::invalid("error")));
         assert_eq!(
             err.respond_undecorated().unwrap_err().status_code(),
             StatusCode::BAD_REQUEST
@@ -275,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_blocking_error_respond_undecorated_error() {
-        let error = BlockingError::Error(AppMessage::WarningMessage("foxtive error").ae());
+        let error = BlockingError::Error(invalid!("foxtive error"));
         let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
 
         let response = result.respond_undecorated();
@@ -289,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_blocking_error_respond_undecorated_code_error() {
-        let error = BlockingError::Error(AppMessage::WarningMessage("foxtive error").ae());
+        let error = BlockingError::Error(invalid!("foxtive error"));
         let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
 
         let response = result.respond_undecorated_code(ResponseCode::Created);

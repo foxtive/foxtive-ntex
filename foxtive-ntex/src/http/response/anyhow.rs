@@ -1,8 +1,8 @@
 use crate::error::HttpError;
-use foxtive::Error;
 use foxtive::prelude::AppMessage;
-use ntex::http::StatusCode;
+use foxtive::Error;
 use ntex::http::error::BlockingError;
+use ntex::http::StatusCode;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
@@ -38,7 +38,7 @@ impl From<HttpError> for ResponseError {
     fn from(value: HttpError) -> Self {
         match value {
             HttpError::AppError(e) => ResponseError::new(e),
-            HttpError::AppMessage(e) => ResponseError::new(e.ae()),
+            HttpError::AppMessage(e) => ResponseError::new(e.into_anyhow()),
             HttpError::Std(e) => ResponseError::new(Error::from_boxed(e)),
             _ => ResponseError::new(foxtive::Error::from(value)),
         }
@@ -55,7 +55,9 @@ impl From<BlockingError<foxtive::Error>> for ResponseError {
     fn from(value: BlockingError<foxtive::Error>) -> Self {
         match value {
             BlockingError::Error(err) => ResponseError::new(err),
-            BlockingError::Canceled => ResponseError::new(AppMessage::InternalServerError.ae()),
+            BlockingError::Canceled => ResponseError::new(
+                AppMessage::internal_server_error("Internal Server Error").into_anyhow(),
+            ),
         }
     }
 }
@@ -63,11 +65,11 @@ impl From<BlockingError<foxtive::Error>> for ResponseError {
 pub mod helpers {
     use crate::contracts::ResponseCodeContract;
     use crate::enums::ResponseCode;
-    use crate::http::HttpError;
     use crate::http::responder::Responder;
+    use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
-    use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
+    use ntex::http::StatusCode;
     use ntex::web::{HttpResponse, WebResponseError};
     use tracing::error;
 
@@ -110,7 +112,7 @@ pub mod helpers {
                     BlockingError::Canceled => {
                         error!("Ntex Blocking Error");
                         make_json_response(
-                            AppMessage::InternalServerError.message(),
+                            AppMessage::internal_server_error("Error").message(),
                             StatusCode::INTERNAL_SERVER_ERROR,
                         )
                     }
@@ -129,7 +131,7 @@ pub mod helpers {
                         None => {
                             error!("Error: {err}");
                             make_json_response(
-                                AppMessage::InternalServerError.message(),
+                                AppMessage::internal_server_error("Error").message(),
                                 StatusCode::INTERNAL_SERVER_ERROR,
                             )
                         }
@@ -139,8 +141,9 @@ pub mod helpers {
         }
     }
 
-    pub fn make_json_response(body: String, status: StatusCode) -> HttpResponse {
+    pub fn make_json_response(body: impl Into<String>, status: StatusCode) -> HttpResponse {
         let code = ResponseCode::from_status(status);
+        let body = body.into();
         Responder::message(&body, code)
     }
 }
