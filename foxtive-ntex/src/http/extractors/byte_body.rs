@@ -43,7 +43,7 @@ impl ByteBody {
     /// Tries to interpret the bytes as a UTF-8 string.
     pub fn as_utf8(&self) -> AppResult<String> {
         String::from_utf8(self.bytes.clone()).map_err(|e| {
-            HttpError::AppMessage(AppMessage::WarningMessageString(e.to_string())).into_app_error()
+            HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error()
         })
     }
 }

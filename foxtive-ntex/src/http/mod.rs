@@ -1,3 +1,4 @@
+use foxtive::internal_server_error;
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
 
@@ -31,8 +32,8 @@ pub trait IntoHttpResult {
 impl<T> IntoAppResult<T> for Result<AppResult<T>, BlockingError<AppMessage>> {
     fn into_app_result(self) -> AppResult<T> {
         self.unwrap_or_else(|msg| match msg {
-            BlockingError::Error(err) => err.ar(),
-            BlockingError::Canceled => AppMessage::InternalServerError.ar(),
+            BlockingError::Error(err) => err.into_result(),
+            BlockingError::Canceled => Err(internal_server_error!("Internal Server Error")),
         })
     }
 }
@@ -40,8 +41,8 @@ impl<T> IntoAppResult<T> for Result<AppResult<T>, BlockingError<AppMessage>> {
 impl<T> IntoAppResult<T> for Result<T, BlockingError<AppMessage>> {
     fn into_app_result(self) -> AppResult<T> {
         self.map_err(|err| match err {
-            BlockingError::Error(err) => err.ae(),
-            BlockingError::Canceled => AppMessage::InternalServerError.ae(),
+            BlockingError::Error(err) => err.into_anyhow(),
+            BlockingError::Canceled => internal_server_error!("Internal Server Error"),
         })
     }
 }
