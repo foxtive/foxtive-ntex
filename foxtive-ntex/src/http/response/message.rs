@@ -44,7 +44,9 @@ impl AppMessageExt for Result<AppMessage, BlockingError<AppMessage>> {
             Ok(msg) => msg.respond(),
             Err(err) => match err {
                 BlockingError::Error(msg) => msg.respond(),
-                BlockingError::Canceled => AppMessage::internal_server_error("Error").into_http_result(),
+                BlockingError::Canceled => {
+                    AppMessage::internal_server_error("Error").into_http_result()
+                }
             },
         }
     }
@@ -56,7 +58,9 @@ impl AppMessageExt for Result<AppMessage, BlockingError<foxtive::Error>> {
             Ok(msg) => msg.respond(),
             Err(err) => match err {
                 BlockingError::Error(err) => Err(HttpError::AppError(err)),
-                BlockingError::Canceled => AppMessage::internal_server_error("Error").into_http_result(),
+                BlockingError::Canceled => {
+                    AppMessage::internal_server_error("Error").into_http_result()
+                }
             },
         }
     }
@@ -65,8 +69,8 @@ impl AppMessageExt for Result<AppMessage, BlockingError<foxtive::Error>> {
 #[cfg(test)]
 mod tests {
     use crate::http::response::ext::AppMessageExt;
-    use foxtive::{internal_server_error, Error};
     use foxtive::prelude::AppMessage;
+    use foxtive::{Error, internal_server_error};
     use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
     use ntex::web::WebResponseError;
@@ -87,7 +91,8 @@ mod tests {
 
     #[test]
     fn test_app_message_result_respond() {
-        let msg: Result<AppMessage, Error> = Ok(AppMessage::internal_server_error("Internal Server Error"));
+        let msg: Result<AppMessage, Error> =
+            Ok(AppMessage::internal_server_error("Internal Server Error"));
         let result = msg.respond();
         assert!(result.is_err());
     }
@@ -112,8 +117,7 @@ mod tests {
         let result = msg.respond();
         assert!(result.is_err());
 
-        let msg: Result<AppMessage, BlockingError<AppMessage>> =
-            Ok(AppMessage::success("Yep"));
+        let msg: Result<AppMessage, BlockingError<AppMessage>> = Ok(AppMessage::success("Yep"));
         let status = msg.respond().unwrap().status();
         assert_eq!(status, StatusCode::OK);
 

@@ -1,11 +1,11 @@
 use crate::error::helpers::make_http_error_response;
 use crate::http::response::anyhow::helpers::make_status_code;
-use foxtive::prelude::AppMessage;
 use foxtive::Error;
+use foxtive::prelude::AppMessage;
 #[cfg(feature = "multipart")]
 use foxtive_ntex_multipart::{ErrorMessage as MultipartErrorMessage, MultipartError};
-use ntex::http::error::PayloadError;
 use ntex::http::StatusCode;
+use ntex::http::error::PayloadError;
 use ntex::web::error::{BlockingError, JsonError};
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::string::FromUtf8Error;
@@ -89,9 +89,9 @@ impl WebResponseError for HttpError {
 
 pub(crate) mod helpers {
     use crate::enums::ResponseCode;
+    use crate::http::HttpError;
     use crate::http::responder::Responder;
     use crate::http::response::anyhow::helpers::make_response;
-    use crate::http::HttpError;
     use foxtive::prelude::AppMessage;
     #[cfg(feature = "multipart")]
     use foxtive_ntex_multipart::MultipartError;
@@ -139,7 +139,9 @@ pub(crate) mod helpers {
             },
             _ => {
                 error!("Error: {err}");
-                make_response(&foxtive::Error::from(AppMessage::internal_server_error("Internal Server Error")))
+                make_response(&foxtive::Error::from(AppMessage::internal_server_error(
+                    "Internal Server Error",
+                )))
             }
         }
     }
@@ -152,7 +154,9 @@ mod tests {
 
     #[test]
     fn test_app_error() {
-        let error = HttpError::AppError(Error::from(AppMessage::internal_server_error("Internal Server Error")));
+        let error = HttpError::AppError(Error::from(AppMessage::internal_server_error(
+            "Internal Server Error",
+        )));
         let app_error = make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }

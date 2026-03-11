@@ -46,9 +46,9 @@ impl StringBody {
     where
         <T as std::str::FromStr>::Err: ToString,
     {
-        self.body.parse::<T>().map_err(|e| {
-            HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error()
-        })
+        self.body
+            .parse::<T>()
+            .map_err(|e| HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error())
     }
 }
 

@@ -25,8 +25,7 @@ impl<T: DeserializeOwned> DeJsonBody<T> {
     /// # Errors
     /// Returns an error if the JSON string cannot be deserialized into the target type T.
     pub fn new(json: String) -> Result<DeJsonBody<T>, HttpError> {
-        let t = serde_json::from_str::<T>(&json)
-            .map_err(|e| AppMessage::invalid(e.to_string()))?;
+        let t = serde_json::from_str::<T>(&json).map_err(|e| AppMessage::invalid(e.to_string()))?;
 
         Ok(DeJsonBody(json, t))
     }

@@ -123,7 +123,8 @@ mod tests {
 
     #[test]
     fn test_option_result_response_send_response_error_or_empty() {
-        let result: AppResult<()> = AppMessage::internal_server_error("Internal Server Error").into_result();
+        let result: AppResult<()> =
+            AppMessage::internal_server_error("Internal Server Error").into_result();
 
         let response = result.send_response(ResponseCode::Ok, "fail");
         match response {
