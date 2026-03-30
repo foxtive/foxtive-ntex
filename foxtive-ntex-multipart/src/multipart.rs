@@ -46,7 +46,8 @@ impl Multipart {
         mut multipart: NtexMultipart,
     ) -> Result<Multipart, MultipartError> {
         while let Some(item) = multipart.next().await {
-            let mut field = item.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
+            let mut field =
+                item.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
 
             if let Some(content_disposition) = field.headers().get("content-disposition") {
                 let content_disposition = content_disposition.to_str().ok();

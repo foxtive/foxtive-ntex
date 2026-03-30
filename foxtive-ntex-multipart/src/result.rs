@@ -46,7 +46,7 @@ pub enum NtexMultipartError {
     #[error("Not consumed")]
     NotConsumed,
     #[error("Field error: {name}: {message}")]
-    Field { name: String, message: String },  // ← only this one loses fidelity
+    Field { name: String, message: String }, // ← only this one loses fidelity
     #[error("Duplicate field: {0}")]
     DuplicateField(String),
     #[error("Missing field: {0}")]
@@ -72,7 +72,10 @@ impl From<ntex_multipart::MultipartError> for NtexMultipartError {
             E::Decode(e) => Self::Decode(e.to_string()),
             E::Payload(e) => Self::Payload(e.to_string()),
             E::NotConsumed => Self::NotConsumed,
-            E::Field { name, source } => Self::Field { name, message: source.to_string() },
+            E::Field { name, source } => Self::Field {
+                name,
+                message: source.to_string(),
+            },
             E::DuplicateField(s) => Self::DuplicateField(s),
             E::MissingField(s) => Self::MissingField(s),
             E::UnknownField(s) => Self::UnknownField(s),
