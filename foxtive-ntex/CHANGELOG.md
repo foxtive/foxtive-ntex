@@ -3,11 +3,14 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.30.0 (2026-03-30)
+* bump(foxtive-ntex-multipart): to version 0.12.0 to fix Send issue with the error type 
+
 ### 0.28.0 (2026-03-11)
-* bump(foxtuve): to version 0.24.0
+* bump(foxtive): to version 0.24.0
 
 ### 0.27.0 (2026-02-04)
-* bump(foxtuve): to version 0.23.0
+* bump(foxtive): to version 0.23.0
 
 ### 0.26.0 (2026-02-04)
 * bump(ntex): to version 3.0.1
