@@ -3,7 +3,7 @@ use crate::contract::PostParseable;
 use crate::data_input::DataInput;
 use crate::file_input::FileInput;
 use crate::file_validator::Validator;
-use crate::result::{MultipartError, MultipartResult};
+use crate::result::{MultipartError, MultipartResult, NtexMultipartError};
 use futures::StreamExt;
 use ntex::http::Payload;
 use ntex::web::{FromRequest, HttpRequest};
@@ -46,7 +46,7 @@ impl Multipart {
         mut multipart: NtexMultipart,
     ) -> Result<Multipart, MultipartError> {
         while let Some(item) = multipart.next().await {
-            let mut field = item.map_err(MultipartError::NtexError)?;
+            let mut field = item.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
 
             if let Some(content_disposition) = field.headers().get("content-disposition") {
                 let content_disposition = content_disposition.to_str().ok();

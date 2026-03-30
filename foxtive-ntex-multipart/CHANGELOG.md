@@ -3,6 +3,9 @@ foxtive-ntex-multipart changelog file
 
 ------
 
+### 0.12.0 (2026-03-30)
+* fix(multipart): replace `NtexError(ntex_multipart::MultipartError)` with `NtexError(NtexMultipartError)` to make `MultipartError` `Send + Sync` without `unsafe`
+
 ### 0.10.0 (2026-02-04)
 * bump(ntex): to version 3.0.1
 

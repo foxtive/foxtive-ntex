@@ -17,8 +17,68 @@ pub enum MultipartError {
     ParseError(String),
     MissingDataField(String),
     InvalidContentDisposition(String),
-    NtexError(ntex_multipart::MultipartError),
+    NtexError(NtexMultipartError),
     ValidationError(InputError),
+}
+
+#[derive(Debug, Error)]
+pub enum NtexMultipartError {
+    #[error("No Content-Type header found")]
+    NoContentType,
+    #[error("Cannot parse Content-Type header")]
+    ParseContentType,
+    #[error("Incompatible Content-Type")]
+    IncompatibleContentType,
+    #[error("Multipart boundary not found")]
+    Boundary,
+    #[error("Content-Disposition missing")]
+    ContentDispositionMissing,
+    #[error("Content-Disposition name missing")]
+    ContentDispositionNameMissing,
+    #[error("Nested multipart not supported")]
+    Nested,
+    #[error("Multipart stream incomplete")]
+    Incomplete,
+    #[error("Decode error: {0}")]
+    Decode(String),
+    #[error("Payload error: {0}")]
+    Payload(String),
+    #[error("Not consumed")]
+    NotConsumed,
+    #[error("Field error: {name}: {message}")]
+    Field { name: String, message: String },  // ← only this one loses fidelity
+    #[error("Duplicate field: {0}")]
+    DuplicateField(String),
+    #[error("Missing field: {0}")]
+    MissingField(String),
+    #[error("Unknown field: {0}")]
+    UnknownField(String),
+    #[error("Blocking error: {0}")]
+    Blocking(String),
+}
+
+impl From<ntex_multipart::MultipartError> for NtexMultipartError {
+    fn from(e: ntex_multipart::MultipartError) -> Self {
+        use ntex_multipart::MultipartError as E;
+        match e {
+            E::NoContentType => Self::NoContentType,
+            E::ParseContentType => Self::ParseContentType,
+            E::IncompatibleContentType => Self::IncompatibleContentType,
+            E::Boundary => Self::Boundary,
+            E::ContentDispositionMissing => Self::ContentDispositionMissing,
+            E::ContentDispositionNameMissing => Self::ContentDispositionNameMissing,
+            E::Nested => Self::Nested,
+            E::Incomplete => Self::Incomplete,
+            E::Decode(e) => Self::Decode(e.to_string()),
+            E::Payload(e) => Self::Payload(e.to_string()),
+            E::NotConsumed => Self::NotConsumed,
+            E::Field { name, source } => Self::Field { name, message: source.to_string() },
+            E::DuplicateField(s) => Self::DuplicateField(s),
+            E::MissingField(s) => Self::MissingField(s),
+            E::UnknownField(s) => Self::UnknownField(s),
+            E::Blocking(e) => Self::Blocking(e.to_string()),
+        }
+    }
 }
 
 impl From<Error> for MultipartError {
