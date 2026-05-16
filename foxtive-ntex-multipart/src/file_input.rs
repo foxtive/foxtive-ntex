@@ -1,14 +1,37 @@
 use crate::content_disposition::ContentDisposition;
 use crate::file_validator::Validator;
+use crate::multipart::FileStorageMode;
 use crate::result::{MultipartError, MultipartResult};
 use crate::{FileRules, Multipart};
 use foxtive::helpers::FileExtHelper;
 use ntex::http::HeaderMap;
 use ntex::util::Bytes;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-#[derive(Debug, Default, Clone)]
+/// Wrapper for disk-stored files that handles cleanup on drop
+#[derive(Debug)]
+pub(crate) struct TempFileGuard {
+    path: PathBuf,
+}
+
+impl TempFileGuard {
+    pub(crate) fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+}
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        // Attempt to delete the temporary file
+        if let Err(e) = std::fs::remove_file(&self.path) {
+            // Log error but don't panic in drop
+            eprintln!("Warning: Failed to clean up temporary file {:?}: {}", self.path, e);
+        }
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct FileInput {
     pub file_name: String,
     pub field_name: String,
@@ -17,6 +40,28 @@ pub struct FileInput {
     pub bytes: Vec<Bytes>,
     pub extension: Option<String>,
     pub content_disposition: ContentDisposition,
+    /// Storage mode: InMemory or OnDisk
+    pub storage_mode: FileStorageMode,
+    /// Guard for cleaning up temporary files (None for in-memory files)
+    pub(crate) temp_guard: Option<std::sync::Arc<TempFileGuard>>,
+}
+
+impl Clone for FileInput {
+    fn clone(&self) -> Self {
+        // When cloning, share the temp file guard (via Arc)
+        // The file will only be deleted when all clones are dropped
+        Self {
+            file_name: self.file_name.clone(),
+            field_name: self.field_name.clone(),
+            size: self.size,
+            content_type: self.content_type.clone(),
+            bytes: self.bytes.clone(),
+            extension: self.extension.clone(),
+            content_disposition: self.content_disposition.clone(),
+            storage_mode: self.storage_mode.clone(),
+            temp_guard: self.temp_guard.clone(),
+        }
+    }
 }
 
 impl FileInput {
@@ -38,7 +83,39 @@ impl FileInput {
             file_name: name,
             field_name: field,
             content_disposition: cd,
+            storage_mode: FileStorageMode::InMemory, // Default to in-memory
+            temp_guard: None,
         })
+    }
+
+    /// Create a FileInput configured for disk streaming
+    pub fn create_with_disk(
+        headers: &HeaderMap,
+        cd: ContentDisposition,
+        temp_dir: &Path,
+    ) -> MultipartResult<Self> {
+        let mut file_input = Self::create(headers, cd)?;
+        
+        // Generate unique temporary file path using timestamp and random number
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        
+        // Use a simple counter-based approach for uniqueness within the same process
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let counter = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        
+        let temp_path = temp_dir.join(format!(
+            "multipart_{}_{}_{}",
+            timestamp, counter, file_input.file_name
+        ));
+        
+        file_input.storage_mode = FileStorageMode::OnDisk(temp_path.clone());
+        file_input.temp_guard = Some(std::sync::Arc::new(TempFileGuard::new(temp_path)));
+        
+        Ok(file_input)
     }
 
     // Save the file to the specified path
@@ -64,6 +141,44 @@ impl FileInput {
     pub fn human_size(&self) -> String {
         let size_in_bytes = self.calculate_size();
         foxtive::helpers::file_size::format_size(size_in_bytes as u64)
+    }
+
+    /// Read file content as bytes (works for both in-memory and on-disk files)
+    pub async fn read_bytes(&self) -> MultipartResult<Vec<u8>> {
+        match &self.storage_mode {
+            FileStorageMode::InMemory => {
+                // Concatenate all bytes chunks
+                let mut result = Vec::with_capacity(self.size);
+                for chunk in &self.bytes {
+                    result.extend_from_slice(chunk);
+                }
+                Ok(result)
+            }
+            FileStorageMode::OnDisk(path) => {
+                // Read from disk
+                tokio::fs::read(path)
+                    .await
+                    .map_err(|e| {
+                        MultipartError::IoError(std::io::Error::other(format!(
+                            "Failed to read file from disk: {}",
+                            e
+                        )))
+                    })
+            }
+        }
+    }
+
+    /// Get the path to the temporary file (if stored on disk)
+    pub fn temp_path(&self) -> Option<&PathBuf> {
+        match &self.storage_mode {
+            FileStorageMode::OnDisk(path) => Some(path),
+            FileStorageMode::InMemory => None,
+        }
+    }
+
+    /// Check if file is stored on disk
+    pub fn is_on_disk(&self) -> bool {
+        matches!(self.storage_mode, FileStorageMode::OnDisk(_))
     }
 
     // Get the content type from headers
@@ -338,6 +453,8 @@ mod tests {
             bytes: vec![Bytes::from_static(&[0; 1024])],
             extension: Some("txt".to_string()),
             content_disposition: create_content_disposition("upload", "test.txt"),
+            storage_mode: crate::multipart::FileStorageMode::InMemory,
+            temp_guard: None,
         };
 
         let cloned = original.clone();

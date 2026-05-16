@@ -36,7 +36,7 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
                 config.service(
                     scope
                         .middleware(MiddlewareChain::new(route.middlewares.clone()))
-                        .configure(controller.handler),
+                        .configure(controller.handler)
                 );
             } else {
                 config.service(scope.configure(controller.handler));
@@ -93,4 +93,10 @@ pub fn ntex_default_service() -> NtexRoute {
     web::to(|| async {
         Responder::message("Requested Resource(s) Not Found", ResponseCode::NotFound)
     })
+}
+
+impl Controller {
+    pub fn new(path: impl Into<String>, handler: fn(cfg: &mut ServiceConfig)) -> Self {
+        Controller { path: path.into(), handler }
+    }
 }

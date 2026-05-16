@@ -6,10 +6,12 @@ mod error;
 pub mod ext;
 pub mod helpers;
 pub mod http;
-mod setup;
+pub mod setup;
 
-pub use setup::state::FoxtiveNtexState;
+pub use setup::state::{AppState, FoxtiveNtexState};
+pub use http::shutdown::{ShutdownConfig, ShutdownRegistry};
+pub use http::server::ServerBuilder;
 
 pub static FOXTIVE_NTEX: OnceLock<FoxtiveNtexState> = OnceLock::new();
 
-pub use ext::app_state::FoxtiveNtexExt;
+pub use ext::app_state::{fox_state, FoxtiveNtexExt};

@@ -1,4 +1,5 @@
 use crate::error::HttpError;
+use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::Payload;
 use ntex::util::BytesMut;
@@ -70,9 +71,21 @@ impl<Err> FromRequest<Err> for StringBody {
     type Error = HttpError;
 
     async fn from_request(_req: &HttpRequest, payload: &mut Payload) -> Result<Self, Self::Error> {
+        let max_size = FOXTIVE_NTEX.app().body_config.string_limit;
         let mut bytes = BytesMut::new();
+        let mut total_size = 0;
+
         while let Some(chunk) = ntex::util::stream_recv(payload).await {
-            bytes.extend_from_slice(&chunk?);
+            let chunk = chunk?;
+            total_size += chunk.len();
+
+            if total_size > max_size {
+                return Err(HttpError::AppMessage(AppMessage::invalid(
+                    "String body exceeded maximum size",
+                )));
+            }
+
+            bytes.extend_from_slice(&chunk);
         }
 
         let raw = String::from_utf8(bytes.to_vec())?;

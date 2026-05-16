@@ -3,6 +3,20 @@ Foxtive-Ntex changelog file
 
 ------
 
+### 0.31.0 (2026-05-16)
+* feat(config): added `BodyConfig` with separate limits for JSON, string, and byte bodies
+* feat(config): deprecated `JsonConfig` in favor of `BodyConfig`
+* feat(extractors): `JsonBody<T>` now discards raw JSON after deserialization (memory optimization)
+* feat(extractors): removed `.body()` and `.into_body()` from `JsonBody` (raw JSON no longer stored)
+* feat(extractors): added `route_factory_arc()` method to accept pre-wrapped `Arc` route factories
+* refactor(config): renamed `boot_thread()` to `route_factory()` (old name deprecated)
+* refactor(extractors): deleted `DeJsonBody` (use `JsonBody<T>` with automatic deserialization)
+* refactor(extractors): `JsonBody<T>` implements `Deref`/`DerefMut` for direct field access
+* fix(extractors): added size limit checks to `StringBody` and `ByteBody` (DoS protection)
+* fix(extractors): `ByteBody::as_utf8()` now returns `&str` instead of cloning (zero-copy)
+* docs: comprehensive README with examples and migration guides
+* cleanup: removed excessive comments and verbose documentation throughout codebase
+
 ### 0.30.0 (2026-03-30)
 * bump(foxtive-ntex-multipart): to version 0.12.0 to fix Send issue with the error type 
 
