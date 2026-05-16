@@ -149,7 +149,7 @@ pub fn default_shutdown_signal() -> Pin<Box<dyn Future<Output = ()> + Send>> {
 
         #[cfg(unix)]
         let terminate = async {
-            use tokio::signal::unix::{signal, SignalKind};
+            use tokio::signal::unix::{SignalKind, signal};
             let mut sigterm =
                 signal(SignalKind::terminate()).expect("failed to listen for SIGTERM");
             sigterm.recv().await;

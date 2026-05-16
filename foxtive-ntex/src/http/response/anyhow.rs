@@ -1,8 +1,8 @@
 use crate::error::HttpError;
-use foxtive::prelude::AppMessage;
 use foxtive::Error;
-use ntex::http::error::BlockingError;
+use foxtive::prelude::AppMessage;
 use ntex::http::StatusCode;
+use ntex::http::error::BlockingError;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
@@ -65,11 +65,11 @@ impl From<BlockingError<foxtive::Error>> for ResponseError {
 pub mod helpers {
     use crate::contracts::ResponseCodeContract;
     use crate::enums::ResponseCode;
-    use crate::http::responder::Responder;
     use crate::http::HttpError;
+    use crate::http::responder::Responder;
     use foxtive::prelude::AppMessage;
-    use ntex::http::error::BlockingError;
     use ntex::http::StatusCode;
+    use ntex::http::error::BlockingError;
     use ntex::web::{HttpResponse, WebResponseError};
     use tracing::error;
 
