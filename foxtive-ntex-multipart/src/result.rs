@@ -3,7 +3,6 @@ use foxtive::StatusCode;
 use foxtive::helpers::time::current_timestamp;
 use ntex::web::{HttpRequest, HttpResponse, WebResponseError};
 use serde_json::json;
-use std::fmt::{Display, Formatter};
 use std::io::Error;
 use thiserror::Error;
 
@@ -11,14 +10,35 @@ pub type MultipartResult<T> = Result<T, MultipartError>;
 
 #[derive(Debug, Error)]
 pub enum MultipartError {
+    #[error("No file was uploaded")]
     NoFile,
+    #[error("IO error: {0}")]
     IoError(Error),
+    #[error("Invalid content type: {0}")]
     NoContentType(String),
+    #[error("Failed to parse post data: {0}")]
     ParseError(String),
+    #[error("Data field '{0}' is required")]
     MissingDataField(String),
+    #[error("Invalid content disposition: {0}")]
     InvalidContentDisposition(String),
+    #[error("Multipart error: {0}")]
     NtexError(NtexMultipartError),
+    #[error("Validation error: {}", .0.error)]
     ValidationError(InputError),
+    #[error("File '{filename}' in field '{field}' is too large: {size} bytes (max: {max_size} bytes)")]
+    FileTooLarge {
+        field: String,
+        filename: String,
+        size: usize,
+        max_size: usize,
+    },
+    #[error("Payload too large for field '{field}': {size} bytes (max: {max_size} bytes)")]
+    PayloadTooLarge {
+        field: String,
+        size: usize,
+        max_size: usize,
+    },
 }
 
 #[derive(Debug, Error)]
@@ -97,7 +117,9 @@ impl WebResponseError for MultipartError {
             | MultipartError::MissingDataField(_)
             | MultipartError::InvalidContentDisposition(_)
             | MultipartError::NtexError(_)
-            | MultipartError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            | MultipartError::ValidationError(_)
+            | MultipartError::FileTooLarge { .. }
+            | MultipartError::PayloadTooLarge { .. } => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -117,6 +139,20 @@ impl WebResponseError for MultipartError {
             MultipartError::ValidationError(err) => {
                 send_response(self.status_code(), &err.error.to_string())
             }
+            MultipartError::FileTooLarge { field, filename, size, max_size } => {
+                let message = format!(
+                    "File '{}' in field '{}' exceeds maximum size limit ({} > {} bytes)",
+                    filename, field, size, max_size
+                );
+                send_response(self.status_code(), &message)
+            }
+            MultipartError::PayloadTooLarge { field, size, max_size } => {
+                let message = format!(
+                    "Request payload for field '{}' exceeds maximum size limit ({} > {} bytes)",
+                    field, size, max_size
+                );
+                send_response(self.status_code(), &message)
+            }
         }
     }
 }
@@ -135,32 +171,4 @@ fn send_response(status_code: StatusCode, message: &str) -> HttpResponse {
         "timestamp": current_timestamp(),
         "data": data
     }))
-}
-impl Display for MultipartError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MultipartError::IoError(err) => {
-                write!(f, "{err}")
-            }
-            MultipartError::NoFile => {
-                write!(f, "No file was uploaded")
-            }
-            MultipartError::MissingDataField(ct) => {
-                write!(f, "Data field '{ct}' is required")
-            }
-            MultipartError::NoContentType(ct) => {
-                write!(f, "Invalid content type: {ct}")
-            }
-            MultipartError::ParseError(pe) => {
-                write!(f, "Failed to parse post data: {pe}")
-            }
-            MultipartError::InvalidContentDisposition(err) => {
-                write!(f, "Invalid content disposition: {err}")
-            }
-            MultipartError::NtexError(err) => {
-                write!(f, "{err}")
-            }
-            MultipartError::ValidationError(err) => write!(f, "{}", err.error),
-        }
-    }
 }

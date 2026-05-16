@@ -1,114 +1,42 @@
 use crate::error::HttpError;
 use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
-use foxtive::prelude::{AppMessage, AppResult};
+use foxtive::prelude::AppMessage;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
 use serde::de::DeserializeOwned;
-use tracing::{debug, error};
+use std::ops;
 
-pub struct JsonBody {
-    json: String,
-}
+pub struct JsonBody<T: DeserializeOwned>(T);
 
-impl JsonBody {
-    #[deprecated(since = "0.9.0", note = "Use the 'body' method instead")]
-    /// Returns the raw JSON string.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use [`body()`] instead.
-    pub fn raw(&self) -> &String {
-        &self.json
-    }
-
-    /// Returns a reference to the underlying JSON string.
-    ///
-    /// # Example
-    /// ```
-    /// use foxtive_ntex::http::extractors::JsonBody;
-    ///
-    /// let json_body = JsonBody::from("{\"key\": \"value\"}");
-    /// assert_eq!(json_body.body(), "{\"key\": \"value\"}");
-    /// ```
-    pub fn body(&self) -> &String {
-        &self.json
-    }
-
-    /// Consumes the `JsonBody`, returning the inner JSON string.
-    ///
-    /// # Example
-    /// ```
-    /// use foxtive_ntex::http::extractors::JsonBody;
-    ///
-    /// let json_body = JsonBody::from("{\"key\": \"value\"}");
-    /// let json = json_body.into_body();
-    /// assert_eq!(json, "{\"key\": \"value\"}");
-    /// ```
-    pub fn into_body(self) -> String {
-        self.json
-    }
-
-    /// Deserializes the JSON string to the specified type.
-    ///
-    /// Returns an application result containing the deserialized value or an error if deserialization fails.
-    ///
-    /// # Errors
-    /// Return an error if the JSON string cannot be deserialized to the target type.
-    pub fn deserialize<T: DeserializeOwned>(&self) -> AppResult<T> {
-        serde_json::from_str::<T>(&self.json).map_err(|e| {
-            error!("Error deserializing JSON: {e:?}");
-            HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error()
-        })
-    }
-
-    /// Parses and returns the JSON string as a [`serde_json::Value`].
-    ///
-    /// # Errors
-    /// Return an error if the string is not valid JSON.
-    pub fn json_value(&self) -> AppResult<serde_json::Value> {
-        Ok(serde_json::from_str(&self.json)?)
+impl<T: DeserializeOwned> JsonBody<T> {
+    pub fn into_inner(self) -> T {
+        self.0
     }
 }
 
-impl From<String> for JsonBody {
-    /// Creates a `JsonBody` from a `String`.
-    ///
-    /// # Example
-    /// ```
-    /// use foxtive_ntex::http::extractors::JsonBody;
-    ///
-    /// let json_str = "{\"key\": \"value\"}".to_string();
-    /// let json_body = JsonBody::from(json_str);
-    /// ```
-    fn from(json: String) -> Self {
-        JsonBody { json }
+impl<T: DeserializeOwned> ops::Deref for JsonBody<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.0
     }
 }
 
-impl From<&str> for JsonBody {
-    /// Creates a `JsonBody` from a `&str`.
-    ///
-    /// # Example
-    /// ```
-    /// use foxtive_ntex::http::extractors::JsonBody;
-    ///
-    /// let json_body = JsonBody::from("{\"key\": \"value\"}");
-    /// ```
-    fn from(json: &str) -> Self {
-        JsonBody {
-            json: json.to_string(),
-        }
+impl<T: DeserializeOwned> ops::DerefMut for JsonBody<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
     }
 }
 
-impl<Err> FromRequest<Err> for JsonBody {
+impl<T: DeserializeOwned, Err> FromRequest<Err> for JsonBody<T> {
     type Error = HttpError;
 
     async fn from_request(
         _req: &HttpRequest,
         payload: &mut Payload,
-    ) -> Result<JsonBody, Self::Error> {
-        let max_size = FOXTIVE_NTEX.app().json_config.limit;
+    ) -> Result<JsonBody<T>, Self::Error> {
+        let max_size = FOXTIVE_NTEX.app().body_config.json_limit;
         let mut bytes = BytesMut::new();
         let mut total_size = 0;
 
@@ -116,138 +44,68 @@ impl<Err> FromRequest<Err> for JsonBody {
             let chunk = item?;
             total_size += chunk.len();
 
-            // Check if we've exceeded the limit
             if total_size > max_size {
                 return Err(HttpError::AppMessage(AppMessage::invalid(
-                    "Json body exceeded maximum size",
+                    "JSON body exceeded maximum size",
                 )));
             }
 
             bytes.extend_from_slice(&chunk);
         }
 
-        let raw = String::from_utf8(bytes.to_vec())?;
-        debug!("[json-body] {raw}");
-        Ok(JsonBody { json: raw })
+        let json = String::from_utf8(bytes.to_vec())?;
+        let value = serde_json::from_str::<T>(&json)
+            .map_err(|e| HttpError::AppMessage(AppMessage::invalid(e.to_string())))?;
+
+        Ok(JsonBody(value))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ntex::http::StatusCode;
-    use ntex::web::WebResponseError;
     use serde::{Deserialize, Serialize};
-    use serde_json::json;
-    use std::collections::HashMap;
 
-    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     struct TestStruct {
         field1: String,
         field2: i32,
     }
 
     #[test]
-    fn test_raw() {
-        let json_str = r#"{"field1": "value1", "field2": 42}"#.to_string();
-        let json_body = JsonBody {
-            json: json_str.clone(),
-        };
-
-        assert_eq!(json_body.body(), &json_str);
-    }
-
-    #[test]
-    fn test_deserialize_success() {
-        let json_str = r#"{"field1": "value1", "field2": 42}"#.to_string();
-        let json_body = JsonBody { json: json_str };
-
-        let result: AppResult<TestStruct> = json_body.deserialize();
-        assert!(result.is_ok());
-
-        let deserialized = result.unwrap();
-        let expected = TestStruct {
+    fn test_deref() {
+        let value = TestStruct {
             field1: "value1".to_string(),
             field2: 42,
         };
+        let json_body = JsonBody(value.clone());
 
-        assert_eq!(deserialized, expected);
+        assert_eq!(*json_body, value);
+        assert_eq!(json_body.field1, "value1");
+        assert_eq!(json_body.field2, 42);
     }
 
     #[test]
-    fn test_deserialize_failure() {
-        let json_str = r#"{"field1": "value1", "field2": "invalid_int"}"#.to_string();
-        let json_body = JsonBody { json: json_str };
-
-        let result: AppResult<TestStruct> = json_body.deserialize();
-        assert!(result.is_err());
-        let error = result.unwrap_err().downcast::<HttpError>().unwrap();
-
-        assert_eq!(error.status_code(), StatusCode::BAD_REQUEST);
-        assert_eq!(
-            error.to_string(),
-            "invalid type: string \"invalid_int\", expected i32 at line 1 column 44"
-        );
-    }
-
-    #[test]
-    fn test_json_value_success() {
-        let json_str = r#"{"field1": "value1", "field2": 42}"#.to_string();
-        let json_body = JsonBody { json: json_str };
-
-        let result = json_body.json_value();
-        assert!(result.is_ok());
-
-        let json_value = result.unwrap();
-        let expected = json!({
-            "field1": "value1",
-            "field2": 42
-        });
-
-        let parsed_json: serde_json::Value = serde_json::from_str(&json_body.json).unwrap();
-        assert_eq!(json_value, expected);
-        assert_eq!(json_value, parsed_json);
-    }
-
-    #[test]
-    fn test_json_value_failure() {
-        let json_str = "not_a_json".to_string();
-        let json_body = JsonBody { json: json_str };
-
-        let result = json_body.json_value();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_json_value_string_as_value() {
-        let json_str = "\"just_a_string\"".to_string();
-        let json_body = JsonBody {
-            json: json_str.clone(),
+    fn test_deref_mut() {
+        let value = TestStruct {
+            field1: "value1".to_string(),
+            field2: 42,
         };
+        let mut json_body = JsonBody(value);
 
-        let result = json_body.json_value();
-        assert!(result.is_ok());
-
-        let json_value = result.unwrap();
-
-        let expected = serde_json::Value::String("just_a_string".to_string());
-
-        assert_eq!(json_value, expected);
+        json_body.field2 = 100;
+        assert_eq!(json_body.field2, 100);
     }
 
     #[test]
-    fn test_deserialize_to_map() {
-        let json_str = r#"{"key1": "value1", "key2": "value2"}"#.to_string();
-        let json_body = JsonBody { json: json_str };
+    fn test_into_inner() {
+        let value = TestStruct {
+            field1: "value1".to_string(),
+            field2: 42,
+        };
+        let json_body = JsonBody(value.clone());
 
-        let result: AppResult<HashMap<String, String>> = json_body.deserialize();
-        assert!(result.is_ok());
-
-        let deserialized = result.unwrap();
-        let mut expected = HashMap::new();
-        expected.insert("key1".to_string(), "value1".to_string());
-        expected.insert("key2".to_string(), "value2".to_string());
-
-        assert_eq!(deserialized, expected);
+        let extracted = json_body.into_inner();
+        assert_eq!(extracted, value);
     }
 }

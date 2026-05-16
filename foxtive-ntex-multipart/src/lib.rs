@@ -13,6 +13,6 @@ pub use contract::*;
 pub use data_input::DataInput;
 pub use file_input::FileInput;
 pub use file_validator::*;
-pub use multipart::Multipart;
+pub use multipart::{FileStorageMode, Multipart, MultipartBuilder, MultipartConfig};
 pub use result::MultipartError;
 pub type MultipartResult<T> = Result<T, MultipartError>;

@@ -2,7 +2,9 @@ mod config;
 
 #[cfg(feature = "static")]
 pub use config::StaticFileConfig;
-pub use config::{JsonConfig, ServerConfig};
+pub use config::{BodyConfig, ServerBuilder};
+#[allow(deprecated)]
+pub use config::JsonConfig;
 
 use crate::FoxtiveNtexState;
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger};
@@ -23,26 +25,28 @@ pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
 }
 
 pub async fn start_ntex_server<Callback, Fut>(
-    config: ServerConfig,
+    builder: ServerBuilder,
     callback: Callback,
 ) -> AppResult<()>
 where
     Callback: FnOnce(FoxtiveNtexState) -> Fut + Copy + Send + 'static,
     Fut: Future<Output = AppResult<()>> + Send + 'static,
 {
-    if !config.has_started_bootstrap {
-        let t_config = config.tracing.unwrap_or_default();
+    if !builder.has_started_bootstrap {
+        let t_config = builder.tracing.unwrap_or_default();
         debug!("Starting bootstrap");
-        init_bootstrap(&config.app, t_config).expect("failed to init bootstrap: ");
+        init_bootstrap(&builder.app, t_config).expect("failed to init bootstrap: ");
     }
 
     debug!("Creating Foxtive-Ntex state");
-    let json_config = config.json_config.unwrap_or_default();
+    let body_config = builder.body_config.unwrap_or_default();
+    let custom_state_builder = builder.custom_state_builder;
     let app_state = make_ntex_state(FoxtiveNtexSetup {
-        allowed_origins: config.allowed_origins,
-        allowed_methods: config.allowed_methods,
-        foxtive_setup: config.foxtive_setup,
-        json_config: json_config.clone(),
+        allowed_origins: builder.allowed_origins,
+        allowed_methods: builder.allowed_methods,
+        foxtive_setup: builder.foxtive_setup,
+        body_config: body_config.clone(),
+        custom_state_builder,
     })
     .await?;
 
@@ -55,18 +59,18 @@ where
         }
     }
 
-    let boot = config.boot_thread;
-    let ntex_json_config = web::types::JsonConfig::default().limit(json_config.limit);
+    let route_factory = builder.route_factory;
+    let ntex_json_config = web::types::JsonConfig::default().limit(body_config.json_limit);
 
     let shared_config = SharedCfg::new("WEB").add(
         IoConfig::new()
-            .set_keepalive_timeout(config.keep_alive)
-            .set_connect_timeout(config.client_timeout)
-            .set_disconnect_timeout(config.client_disconnect),
+            .set_keepalive_timeout(builder.keep_alive)
+            .set_connect_timeout(builder.client_timeout)
+            .set_disconnect_timeout(builder.client_disconnect),
     );
 
     let server = web::HttpServer::new(async move || {
-        let routes = boot();
+        let routes = route_factory();
 
         let app = web::App::new()
             .state(ntex_json_config.clone())
@@ -86,8 +90,8 @@ where
             #[cfg(feature = "static")]
             {
                 return app.service(ntex_files::Files::new(
-                    &config.static_config.path,
-                    &config.static_config.dir,
+                    &builder.static_config.path,
+                    &builder.static_config.dir,
                 ));
             }
         }
@@ -95,19 +99,19 @@ where
         app
     })
     .config(shared_config)
-    .backlog(config.backlog)
-    .workers(config.workers)
-    .maxconn(config.max_connections)
-    .maxconnrate(config.max_connections_rate)
+    .backlog(builder.backlog)
+    .workers(builder.workers)
+    .maxconn(builder.max_connections)
+    .maxconnrate(builder.max_connections_rate)
     // .keep_alive(config.keep_alive)
-    .bind((config.host, config.port))?
+    .bind((builder.host, builder.port))?
     .run();
 
     // clone server handle
     let srv = server.clone();
 
     // use provided shutdown signal or default
-    let shutdown_signal = config
+    let shutdown_signal = builder
         .shutdown_signal
         .unwrap_or_else(default_shutdown_signal);
 
@@ -125,7 +129,7 @@ where
     server.await.map_err(Error::from)?;
 
     // AFTER server fully stops, run cleanup handler
-    if let Some(on_shutdown) = config.on_shutdown {
+    if let Some(on_shutdown) = builder.on_shutdown {
         debug!("Running shutdown handler");
         on_shutdown.await;
     }

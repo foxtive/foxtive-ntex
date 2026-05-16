@@ -94,3 +94,9 @@ pub fn ntex_default_service() -> NtexRoute {
         Responder::message("Requested Resource(s) Not Found", ResponseCode::NotFound)
     })
 }
+
+impl Controller {
+    pub fn new(path: impl Into<String>, handler: fn(cfg: &mut ServiceConfig)) -> Self {
+        Controller { path: path.into(), handler }
+    }
+}

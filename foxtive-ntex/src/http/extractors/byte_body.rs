@@ -1,4 +1,5 @@
 use crate::error::HttpError;
+use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
 use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::Payload;
 use ntex::util::BytesMut;
@@ -41,8 +42,8 @@ impl ByteBody {
     }
 
     /// Tries to interpret the bytes as a UTF-8 string.
-    pub fn as_utf8(&self) -> AppResult<String> {
-        String::from_utf8(self.bytes.clone()).map_err(|e| {
+    pub fn as_utf8(&self) -> AppResult<&str> {
+        std::str::from_utf8(&self.bytes).map_err(|e| {
             HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error()
         })
     }
@@ -66,9 +67,21 @@ impl<Err> FromRequest<Err> for ByteBody {
     type Error = HttpError;
 
     async fn from_request(_req: &HttpRequest, payload: &mut Payload) -> Result<Self, Self::Error> {
+        let max_size = FOXTIVE_NTEX.app().body_config.byte_limit;
         let mut bytes = BytesMut::new();
+        let mut total_size = 0;
+
         while let Some(chunk) = ntex::util::stream_recv(payload).await {
-            bytes.extend_from_slice(&chunk?);
+            let chunk = chunk?;
+            total_size += chunk.len();
+
+            if total_size > max_size {
+                return Err(HttpError::AppMessage(AppMessage::invalid(
+                    "Byte body exceeded maximum size",
+                )));
+            }
+
+            bytes.extend_from_slice(&chunk);
         }
 
         debug!("[byte-body] {} bytes", bytes.len());
@@ -112,7 +125,7 @@ mod tests {
         let bb = ByteBody::from(text.as_bytes());
         let utf8 = bb.as_utf8();
         assert!(utf8.is_ok());
-        assert_eq!(utf8.unwrap(), text.to_string());
+        assert_eq!(utf8.unwrap(), text);
     }
 
     #[test]

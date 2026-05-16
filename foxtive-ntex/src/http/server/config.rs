@@ -1,12 +1,21 @@
-use crate::http::Method;
 use crate::http::kernel::Route;
-use foxtive::setup::FoxtiveSetup;
+use crate::http::shutdown::{ShutdownConfig, ShutdownRegistry};
+use crate::http::Method;
+use crate::FoxtiveNtexState;
+use foxtive::prelude::AppResult;
 use foxtive::setup::trace::Tracing;
+use foxtive::setup::FoxtiveSetup;
 use ntex::time::Seconds;
+use std::any::Any;
+use std::collections::HashMap;
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
 pub type ShutdownSignalHandler = Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
+
+/// Custom state builder function type
+type CustomStateBuilderFn = Box<dyn FnOnce() -> HashMap<String, Box<dyn Any + Send + Sync>> + Send>;
 
 /// Configuration for serving static files.
 ///
@@ -46,35 +55,67 @@ pub struct StaticFileConfig {
     pub dir: String,
 }
 
-/// Configuration for JSON request body parsing.
+/// Configuration for HTTP request body parsing.
 ///
-/// This struct controls how JSON payloads are processed, including size limits
-/// and content-type validation.
+/// This struct controls how different body types (JSON, string, bytes) are processed,
+/// including size limits for each type.
 ///
 /// # Default Settings
-/// - Maximum body size: 512,000 bytes (500 KB)
-/// - Content-type validation: None (accepts any content-type)
+/// - JSON limit: 51,000 bytes (50 KB)
+/// - String limit: 51,000 bytes (50 KB)
+/// - Byte limit: 51,000 bytes (50 KB)
 ///
 /// # Example
 /// ```rust
-/// use foxtive_ntex::http::server::JsonConfig;
+/// use foxtive_ntex::http::server::BodyConfig;
 ///
-/// // Use default configuration (50 KB limit)
-/// let config = JsonConfig::default();
+/// // Use default configuration
+/// let config = BodyConfig::default();
 ///
-/// // Custom size limit
-/// let config = JsonConfig::default().limit(1024 * 1024); // 1 MB
+/// // Custom limits for different body types
+/// let config = BodyConfig::default()
+///     .json_limit(1024 * 1024)      // 1 MB for JSON
+///     .string_limit(512 * 1024)     // 512 KB for strings
+///     .byte_limit(2 * 1024 * 1024); // 2 MB for bytes
 /// ```
-#[derive(Clone)]
-pub struct JsonConfig {
-    /// Maximum allowed size for JSON request bodies in bytes.
-    ///
-    /// Requests exceeding this limit will be rejected with a payload too large error.
-    /// Default: 51,200 bytes (50 KB)
-    pub(crate) limit: usize,
+#[derive(Clone, Debug)]
+pub struct BodyConfig {
+    pub(crate) json_limit: usize,
+    pub(crate) string_limit: usize,
+    pub(crate) byte_limit: usize,
 }
 
-pub struct ServerConfig {
+impl BodyConfig {
+    pub fn json_limit(mut self, limit: usize) -> Self {
+        self.json_limit = limit;
+        self
+    }
+
+    pub fn string_limit(mut self, limit: usize) -> Self {
+        self.string_limit = limit;
+        self
+    }
+
+    pub fn byte_limit(mut self, limit: usize) -> Self {
+        self.byte_limit = limit;
+        self
+    }
+}
+
+impl Default for BodyConfig {
+    fn default() -> Self {
+        Self {
+            json_limit: 51_000,
+            string_limit: 51_000,
+            byte_limit: 51_000,
+        }
+    }
+}
+
+#[deprecated(since = "0.31.0", note = "Use BodyConfig instead")]
+pub type JsonConfig = BodyConfig;
+
+pub struct ServerBuilder {
     pub(crate) host: String,
     pub(crate) port: u16,
     pub(crate) workers: usize,
@@ -91,7 +132,7 @@ pub struct ServerConfig {
 
     pub(crate) backlog: i32,
 
-    pub(crate) json_config: Option<JsonConfig>,
+    pub(crate) body_config: Option<BodyConfig>,
 
     pub(crate) app: String,
     pub(crate) foxtive_setup: FoxtiveSetup,
@@ -104,22 +145,26 @@ pub struct ServerConfig {
     /// whether the app bootstrap has started
     pub(crate) has_started_bootstrap: bool,
 
-    /// list of allowed CORS origins
     pub(crate) allowed_origins: Vec<String>,
 
-    /// list of allowed CORS origins
     pub(crate) allowed_methods: Vec<Method>,
 
-    pub(crate) boot_thread: Arc<dyn Fn() -> Vec<Route> + Send + Sync>,
+    pub(crate) route_factory: Arc<dyn Fn() -> Vec<Route> + Send + Sync>,
 
     pub(crate) on_shutdown: Option<ShutdownSignalHandler>,
 
     pub(crate) shutdown_signal: Option<Pin<Box<dyn Future<Output = ()> + Send>>>,
+
+    pub(crate) shutdown_config: Option<ShutdownConfig>,
+
+    pub(crate) shutdown_registry: ShutdownRegistry,
+
+    pub(crate) custom_state_builder: Option<CustomStateBuilderFn>,
 }
 
-impl ServerConfig {
-    pub fn create(host: &str, port: u16, setup: FoxtiveSetup) -> ServerConfig {
-        ServerConfig {
+impl ServerBuilder {
+    pub fn create(host: &str, port: u16, setup: FoxtiveSetup) -> ServerBuilder {
+        ServerBuilder {
             host: host.to_string(),
             port,
             workers: 2,
@@ -136,11 +181,14 @@ impl ServerConfig {
             has_started_bootstrap: false,
             allowed_origins: vec![],
             allowed_methods: vec![],
-            boot_thread: Arc::new(Vec::new),
+            route_factory: Arc::new(Vec::new),
             tracing: None,
-            json_config: None,
+            body_config: None,
             on_shutdown: None,
             shutdown_signal: None,
+            shutdown_config: None,
+            shutdown_registry: ShutdownRegistry::new(),
+            custom_state_builder: None,
         }
     }
 
@@ -150,7 +198,7 @@ impl ServerConfig {
         port: u16,
         setup: FoxtiveSetup,
         config: StaticFileConfig,
-    ) -> ServerConfig {
+    ) -> ServerBuilder {
         Self::create(host, port, setup).static_config(config)
     }
 
@@ -260,9 +308,25 @@ impl ServerConfig {
         self
     }
 
-    pub fn boot_thread(mut self, boot_thread: Arc<dyn Fn() -> Vec<Route> + Send + Sync>) -> Self {
-        self.boot_thread = boot_thread;
+    /// Set the route factory function.
+    ///
+    /// This function is called once per worker to create route definitions.
+    pub fn route_factory<F: Fn() -> Vec<Route> + Send + Sync + 'static>(mut self, factory: F) -> Self {
+        self.route_factory = Arc::new(factory);
         self
+    }
+
+    /// Set the route factory using an existing `Arc`.
+    ///
+    /// Useful for sharing the same factory across multiple server configurations.
+    pub fn route_factory_arc(mut self, factory: Arc<dyn Fn() -> Vec<Route> + Send + Sync>) -> Self {
+        self.route_factory = factory;
+        self
+    }
+
+    #[deprecated(since = "0.32.0", note = "Use route_factory instead")]
+    pub fn boot_thread<F: Fn() -> Vec<Route> + Send + Sync + 'static>(self, factory: F) -> Self {
+        self.route_factory(factory)
     }
 
     pub fn has_started_bootstrap(mut self, has_started_bootstrap: bool) -> Self {
@@ -270,8 +334,21 @@ impl ServerConfig {
         self
     }
 
-    pub fn json_config(mut self, json_config: JsonConfig) -> Self {
-        self.json_config = Some(json_config);
+    pub fn body_config(mut self, body_config: BodyConfig) -> Self {
+        self.body_config = Some(body_config);
+        self
+    }
+
+    #[deprecated(since = "0.31.0", note = "Use body_config instead")]
+    pub fn json_config(self, config: BodyConfig) -> Self {
+        self.body_config(config)
+    }
+
+    pub fn custom_state_builder(
+        mut self,
+        builder: CustomStateBuilderFn,
+    ) -> Self {
+        self.custom_state_builder = Some(builder);
         self
     }
 
@@ -306,13 +383,276 @@ impl ServerConfig {
         self.shutdown_signal = Some(Box::pin(func));
         self
     }
-}
 
-impl JsonConfig {
-    /// Change max size of payload. By default max size is 50Kb
-    pub fn limit(mut self, limit: usize) -> Self {
-        self.limit = limit;
+    /// Validate the server configuration before startup.
+    ///
+    /// This method checks for common configuration errors and warns about potentially
+    /// problematic settings. It returns an error if critical issues are found.
+    ///
+    /// # Validation Rules
+    /// - Port must not be 0
+    /// - Workers must be at least 1
+    /// - Backlog must not be negative
+    /// - Timeout values are checked for reasonable ranges (warnings only)
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerConfig;
+    /// // FoxtiveSetup must be created with your application's setup logic
+    /// // let config = ServerConfig::validate_example();
+    /// ```
+    pub fn validate(&self) -> foxtive::results::AppResult<()> {
+        use foxtive::internal_server_error;
+
+        // Critical validations
+        if self.port == 0 {
+            return Err(internal_server_error!("Port cannot be 0"));
+        }
+
+        if self.workers == 0 {
+            return Err(internal_server_error!("Workers must be at least 1"));
+        }
+
+        if self.backlog < 0 {
+            return Err(internal_server_error!("Backlog cannot be negative"));
+        }
+
+        if self.max_connections == 0 {
+            return Err(internal_server_error!("Max connections must be at least 1"));
+        }
+
+        if self.max_connections_rate == 0 {
+            return Err(internal_server_error!(
+                "Max connection rate must be at least 1"
+            ));
+        }
+
+        // Warnings for potentially problematic settings
+        if self.client_timeout.0 > 300 {
+            tracing::warn!(
+                "Client timeout is very high: {} seconds. Consider reducing for better resource management.",
+                self.client_timeout.0
+            );
+        }
+
+        if self.keep_alive.0 > 300 {
+            tracing::warn!(
+                "Keep-alive timeout is very high: {} seconds. This may cause resource exhaustion under load.",
+                self.keep_alive.0
+            );
+        }
+
+        if self.workers > num_cpus::get() * 2 {
+            tracing::warn!(
+                "Worker count ({}) is more than 2x the available CPU cores ({}). This may degrade performance.",
+                self.workers,
+                num_cpus::get()
+            );
+        }
+
+        if self.backlog > 10000 {
+            tracing::warn!(
+                "Backlog ({}) is very high. This may cause memory issues under extreme load.",
+                self.backlog
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Create a server configuration with smart defaults for development.
+    ///
+    /// This is a convenience method that creates a configuration optimized for
+    /// local development with relaxed timeouts and single worker.
+    ///
+    /// # Defaults
+    /// - Workers: 1 (easier debugging)
+    /// - Client timeout: 60 seconds
+    /// - Keep-alive: 60 seconds
+    /// - Max connections: 1000
+    /// - Backlog: 256
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerConfig;
+    /// // FoxtiveSetup must be created with your application's setup logic
+    /// // let config = ServerConfig::dev_mode("127.0.0.1", 3000, setup);
+    /// ```
+    pub fn dev_mode(host: &str, port: u16, setup: FoxtiveSetup) -> Self {
+        Self::create(host, port, setup)
+            .workers(1)
+            .client_timeout(60)
+            .keep_alive(Seconds(60))
+            .max_conn(1000)
+            .backlog(256)
+    }
+
+    /// Create a server configuration optimized for production deployment.
+    ///
+    /// This configuration uses conservative settings suitable for most production
+    /// workloads with good performance and resource management.
+    ///
+    /// # Defaults
+    /// - Workers: Auto-detected (number of CPU cores)
+    /// - Client timeout: 15 seconds
+    /// - Keep-alive: 30 seconds
+    /// - Max connections: 25,000
+    /// - Backlog: 2048
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerConfig;
+    /// // FoxtiveSetup must be created with your application's setup logic
+    /// // let config = ServerConfig::production_mode("0.0.0.0", 8080, setup);
+    /// ```
+    pub fn production_mode(host: &str, port: u16, setup: FoxtiveSetup) -> Self {
+        let workers = num_cpus::get();
+        Self::create(host, port, setup)
+            .workers(workers)
+            .client_timeout(15)
+            .keep_alive(ntex::time::Seconds(30))
+            .max_conn(25_000)
+            .backlog(2048)
+    }
+
+    /// Create a server configuration optimized for high-performance scenarios.
+    ///
+    /// This configuration maximizes throughput and concurrent connections,
+    /// suitable for high-traffic APIs or microservices.
+    ///
+    /// # Defaults
+    /// - Workers: 2x CPU cores (for I/O-bound workloads)
+    /// - Client timeout: 5 seconds
+    /// - Keep-alive: 10 seconds
+    /// - Max connections: 50,000
+    /// - Max connection rate: 512
+    /// - Backlog: 4096
+    ///
+    /// # Warning
+    /// This configuration uses more resources. Monitor your system to ensure
+    /// it can handle the increased load.
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerConfig;
+    /// // FoxtiveSetup must be created with your application's setup logic
+    /// // let config = ServerConfig::high_performance_mode("0.0.0.0", 8080, setup);
+    /// ```
+    pub fn high_performance_mode(host: &str, port: u16, setup: FoxtiveSetup) -> Self {
+        let workers = num_cpus::get() * 2;
+        Self::create(host, port, setup)
+            .workers(workers)
+            .client_timeout(5)
+            .keep_alive(Seconds(10))
+            .max_conn(50_000)
+            .max_conn_rate(512)
+            .backlog(4096)
+    }
+
+    /// Configure shutdown behavior with timeout and cleanup coordination.
+    ///
+    /// This method sets up coordinated shutdown for all registered services.
+    /// Services are shut down in priority order with per-service timeouts.
+    ///
+    /// # Arguments
+    /// * `config` - Shutdown configuration with timeout settings
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::{ServerConfig, ShutdownConfig};
+    /// // FoxtiveSetup must be created with your application's setup logic
+    /// // let config = ServerConfig::create("127.0.0.1", 8080, setup)
+    /// //     .shutdown_config(ShutdownConfig::new(30));
+    /// ```
+    pub fn shutdown_config(mut self, config: ShutdownConfig) -> Self {
+        self.shutdown_config = Some(config);
         self
+    }
+
+    /// Register a service for graceful shutdown cleanup.
+    ///
+    /// Services are shut down in priority order (lower priority number first).
+    /// Each service has a timeout to prevent one slow service from blocking others.
+    ///
+    /// # Arguments
+    /// * `name` - Name of the service (for logging)
+    /// * `priority` - Shutdown priority (lower = shutdown first)
+    ///   - 0-10: Critical infrastructure (databases, message queues)
+    ///   - 11-50: Application services (caches, connection pools)
+    ///   - 51-100: Auxiliary services (loggers, metrics)
+    /// * `cleanup` - Async cleanup function to execute
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerBuilder;
+    /// // FoxtiveSetup must be created with your application's setup logic
+    /// // let config = ServerBuilder::create("127.0.0.1", 8080, setup)
+    /// //     .register_shutdown_service("database", 1, || async {
+    /// //         println!("Database closed");
+    /// //     });
+    /// ```
+    pub fn register_shutdown_service<F, Fut>(mut self, name: &str, priority: u8, cleanup: F) -> Self
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.shutdown_registry.register(name, priority, cleanup);
+        self
+    }
+
+    /// Start the HTTP server with an optional bootstrap callback.
+    ///
+    /// This method validates the configuration, sets up the ntex server,
+    /// and starts listening for incoming requests.
+    ///
+    /// # Arguments
+    /// * `callback` - Optional async function that runs after state creation but before server starts.
+    ///   Useful for database migrations, cache warming, etc.
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerBuilder;
+    /// use foxtive::setup::FoxtiveSetup;
+    ///
+    /// let foxtive = FoxtiveSetup::default();
+    ///
+    /// ServerBuilder::dev_mode("127.0.0.1", 3000, foxtive)
+    ///     .on_shutdown(async {
+    ///         println!("Server shutting down gracefully");
+    ///     })
+    ///     .start(|state| async move {
+    ///         // Bootstrap code here (e.g., database migrations)
+    ///         println!("Server starting...");
+    ///         Ok(())
+    ///     })
+    ///     .await?;
+    /// ```
+    pub async fn start<Callback, Fut>(self, callback: Callback) -> AppResult<()>
+    where
+        Callback: FnOnce(FoxtiveNtexState) -> Fut + Copy + Send + 'static,
+        Fut: Future<Output = AppResult<()>> + Send + 'static,
+    {
+        super::start_ntex_server(self, callback).await
+    }
+
+    /// Start the HTTP server without a bootstrap callback.
+    ///
+    /// This is a convenience method for simple servers that don't need
+    /// initialization logic before starting.
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use foxtive_ntex::http::server::ServerBuilder;
+    /// use foxtive::setup::FoxtiveSetup;
+    ///
+    /// let foxtive = FoxtiveSetup::default();
+    ///
+    /// ServerBuilder::production_mode("0.0.0.0", 8080, foxtive)
+    ///     .run()
+    ///     .await?;
+    /// ```
+    pub async fn run(self) -> AppResult<()> {
+        self.start(|_state| async { Ok(()) }).await
     }
 }
 
@@ -326,10 +666,19 @@ impl Default for StaticFileConfig {
     }
 }
 
-impl Default for JsonConfig {
-    fn default() -> Self {
-        JsonConfig {
-            limit: 51_000, // 50 KB
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_body_config_limits() {
+        let config = BodyConfig::default()
+            .json_limit(1024 * 1024)
+            .string_limit(512 * 1024)
+            .byte_limit(2 * 1024 * 1024);
+        
+        assert_eq!(config.json_limit, 1_048_576);
+        assert_eq!(config.string_limit, 524_288);
+        assert_eq!(config.byte_limit, 2_097_152);
     }
 }

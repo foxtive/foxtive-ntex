@@ -12,6 +12,29 @@ pub(crate) mod test {
         Multipart {
             file_inputs: Default::default(),
             data_inputs: Default::default(),
+            config: crate::multipart::MultipartConfig::default(),
+            total_payload_size: 0,
+        }
+    }
+
+    // Helper function to create a test FileInput
+    fn create_test_file_input(
+        field_name: &str,
+        file_name: &str,
+        content_type: &str,
+        size: usize,
+        bytes: Vec<Bytes>,
+    ) -> FileInput {
+        FileInput {
+            field_name: field_name.to_string(),
+            file_name: file_name.to_string(),
+            content_type: content_type.to_string(),
+            size,
+            bytes,
+            extension: None,
+            content_disposition: Default::default(),
+            storage_mode: crate::multipart::FileStorageMode::InMemory,
+            temp_guard: None,
         }
     }
 
@@ -27,15 +50,13 @@ pub(crate) mod test {
     // Test 2: Test saving a file to disk
     #[tokio::test]
     async fn test_save_file() {
-        let file_input = FileInput {
-            field_name: "file".to_string(),
-            file_name: "test.txt".to_string(),
-            content_type: "text/plain".to_string(),
-            size: 11,
-            bytes: vec![Bytes::from("Hello World")],
-            extension: None,
-            content_disposition: Default::default(),
-        };
+        let file_input = create_test_file_input(
+            "file",
+            "test.txt",
+            "text/plain",
+            11,
+            vec![Bytes::from("Hello World")],
+        );
 
         let path = "test_output.txt";
         let result = Multipart::save_file(&file_input, &path).await;
@@ -86,29 +107,25 @@ pub(crate) mod test {
             .file_inputs
             .entry("file1".to_string())
             .or_default()
-            .push(FileInput {
-                field_name: "file1".to_string(),
-                file_name: "file1.txt".to_string(),
-                content_type: "text/plain".to_string(),
-                size: 11,
-                bytes: vec![Bytes::from("File 1 Content")],
-                extension: None,
-                content_disposition: Default::default(),
-            });
+            .push(create_test_file_input(
+                "file1",
+                "file1.txt",
+                "text/plain",
+                11,
+                vec![Bytes::from("File 1 Content")],
+            ));
 
         multipart_instance
             .file_inputs
             .entry("file1".to_string())
             .or_default()
-            .push(FileInput {
-                field_name: "file1".to_string(),
-                file_name: "file2.txt".to_string(),
-                content_type: "text/plain".to_string(),
-                size: 12,
-                bytes: vec![Bytes::from("File 2 Content")],
-                extension: None,
-                content_disposition: Default::default(),
-            });
+            .push(create_test_file_input(
+                "file1",
+                "file2.txt",
+                "text/plain",
+                12,
+                vec![Bytes::from("File 2 Content")],
+            ));
 
         // Verify multiple files for the same field
         assert_eq!(multipart_instance.files("file1").unwrap().len(), 2);
@@ -152,15 +169,13 @@ pub(crate) mod test {
             .file_inputs
             .entry("file2".to_string())
             .or_default()
-            .push(FileInput {
-                field_name: "file2".to_string(),
-                file_name: "file1.txt".to_string(),
-                content_type: "text/plain".to_string(),
-                size: 5,
-                bytes: vec![Bytes::from("test1")],
-                extension: None,
-                content_disposition: Default::default(),
-            });
+            .push(create_test_file_input(
+                "file2",
+                "file1.txt",
+                "text/plain",
+                5,
+                vec![Bytes::from("test1")],
+            ));
 
         let validator2 = Validator::new().add_rule(
             "file2",
@@ -197,15 +212,13 @@ pub(crate) mod test {
             .file_inputs
             .entry("file1".to_string())
             .or_default()
-            .push(FileInput {
-                field_name: "file1".to_string(),
-                file_name: "file1.txt".to_string(),
-                content_type: "text/plain".to_string(),
-                size: 11,
-                bytes: vec![Bytes::from("File 1 Content")],
-                extension: None,
-                content_disposition: Default::default(),
-            });
+            .push(create_test_file_input(
+                "file1",
+                "file1.txt",
+                "text/plain",
+                11,
+                vec![Bytes::from("File 1 Content")],
+            ));
 
         // Test first data input
         let first_data = multipart_instance.first_data("key1");
