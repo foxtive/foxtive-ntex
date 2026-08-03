@@ -1,7 +1,19 @@
 # Foxtive-Ntex Changelog
-Foxtive-Ntex changelog file 
 
 ------
+
+### 1.0.0
+
+* **BREAKING**: moved from global state to dependency injection — `ServerBuilder` now takes `Arc<App>` instead of `FoxtiveSetup`
+* **BREAKING**: removed `fox_state` global accessor; use `req.service::<T>()` or `fox_service::<T>(req)` instead
+* **BREAKING**: `start()` callback now receives `Arc<App>` for DI access during bootstrap
+* feat(server): added `configure()` for raw ntex `ServiceConfig` routing (replaces `route_factory` when set)
+* feat(server): added `raw_configure()` for additive route registration
+* feat(server): added `health_check_path()` for built-in health check endpoint
+* feat(server): added `register_shutdown_service()` directly on `ServerBuilder`
+* refactor: `App` from foxtive v1 is now the DI container at the core of the framework
+* refactor: `ShutdownRegistry` and `ShutdownConfig` now exported at crate root
+* docs: rewrote README with DI-first examples and updated migration guide
 
 ### 0.31.0 (2026-05-16)
 * feat(config): added `BodyConfig` with separate limits for JSON, string, and byte bodies
@@ -14,8 +26,6 @@ Foxtive-Ntex changelog file
 * refactor(extractors): `JsonBody<T>` implements `Deref`/`DerefMut` for direct field access
 * fix(extractors): added size limit checks to `StringBody` and `ByteBody` (DoS protection)
 * fix(extractors): `ByteBody::as_utf8()` now returns `&str` instead of cloning (zero-copy)
-* docs: comprehensive README with examples and migration guides
-* cleanup: removed excessive comments and verbose documentation throughout codebase
 
 ### 0.30.0 (2026-03-30)
 * bump(foxtive-ntex-multipart): to version 0.12.0 to fix Send issue with the error type 

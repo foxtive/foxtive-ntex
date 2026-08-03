@@ -1,7 +1,11 @@
-# Multipart Changelog
-foxtive-ntex-multipart changelog file
+# Foxtive-Ntex Multipart Changelog
 
 ------
+
+### 1.0.0
+
+* bump: aligned with foxtive-ntex v1.0 (foxtive v1 / DI refactor)
+* docs: rewrote README
 
 ### 0.12.0 (2026-03-30)
 * fix(multipart): replace `NtexError(ntex_multipart::MultipartError)` with `NtexError(NtexMultipartError)` to make `MultipartError` `Send + Sync` without `unsafe`

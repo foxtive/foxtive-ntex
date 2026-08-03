@@ -14,12 +14,12 @@ pub enum MiddlewareFlow<T> {
     Respond(HttpRequest, HttpResponse),
 }
 
-#[foxtive::async_trait(?Send)]
+#[async_trait::async_trait(?Send)]
 pub trait BeforeMiddleware {
     async fn handle(&self, req: HttpRequest) -> AppResult<MiddlewareFlow<HttpRequest>>;
 }
 
-#[foxtive::async_trait(?Send)]
+#[async_trait::async_trait(?Send)]
 pub trait AfterMiddleware {
     async fn handle(&self, res: WebResponse) -> AppResult<WebResponse>;
 }

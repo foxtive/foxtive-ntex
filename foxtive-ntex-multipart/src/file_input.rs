@@ -24,9 +24,20 @@ impl TempFileGuard {
 impl Drop for TempFileGuard {
     fn drop(&mut self) {
         // Attempt to delete the temporary file
-        if let Err(e) = std::fs::remove_file(&self.path) {
-            // Log error but don't panic in drop
-            eprintln!("Warning: Failed to clean up temporary file {:?}: {}", self.path, e);
+        // Use spawn_blocking to avoid blocking the async runtime
+        let path = self.path.clone();
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn_blocking(move || {
+                if let Err(e) = std::fs::remove_file(&path) {
+                    // Log error but don't panic in drop
+                    eprintln!("Warning: Failed to clean up temporary file {:?}: {}", path, e);
+                }
+            });
+        } else {
+            // Fallback to synchronous removal if no runtime available
+            if let Err(e) = std::fs::remove_file(&self.path) {
+                eprintln!("Warning: Failed to clean up temporary file {:?}: {}", self.path, e);
+            }
         }
     }
 }
@@ -107,9 +118,15 @@ impl FileInput {
         static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let counter = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         
+        // Sanitize filename to prevent path traversal attacks
+        let safe_filename = std::path::Path::new(&file_input.file_name)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("upload");
+        
         let temp_path = temp_dir.join(format!(
             "multipart_{}_{}_{}",
-            timestamp, counter, file_input.file_name
+            timestamp, counter, safe_filename
         ));
         
         file_input.storage_mode = FileStorageMode::OnDisk(temp_path.clone());

@@ -585,7 +585,6 @@ pub(crate) mod test {
         let is_priority: bool = multipart_instance.post("is_priority").unwrap();
         assert!(is_priority);
 
-        println!("✅ All real-world integration tests passed!");
     }
 
     #[cfg(feature = "uuid")]
@@ -610,7 +609,6 @@ pub(crate) mod test {
         let result: Result<uuid::Uuid, _> = multipart_instance.post("invalid_uuid");
         assert!(result.is_err());
 
-        println!("✅ UUID support tests passed!");
     }
 
     #[cfg(feature = "uuid")]
@@ -642,6 +640,125 @@ pub(crate) mod test {
         let result_uuid = multipart_instance.post_or("missing_uuid", default_uuid);
         assert_eq!(result_uuid, default_uuid);
 
-        println!("✅ Comprehensive UUID integration tests passed!");
+    }
+
+    // Test 16: Disk streaming - save OnDisk file
+    #[tokio::test]
+    async fn test_save_ondisk_file() {
+        use crate::multipart::FileStorageMode;
+
+        // Create a temporary file to simulate disk storage
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("test_ondisk_source.txt");
+        let dest_file = temp_dir.join("test_ondisk_dest.txt");
+
+        // Write test content to temp file
+        tokio::fs::write(&temp_file, "Disk stored content").await.unwrap();
+
+        // Create FileInput with OnDisk storage mode
+        let file_input = FileInput {
+            field_name: "file".to_string(),
+            file_name: "test.txt".to_string(),
+            content_type: "text/plain".to_string(),
+            size: 21,
+            bytes: vec![], // Empty for disk-stored files
+            extension: Some("txt".to_string()),
+            content_disposition: Default::default(),
+            storage_mode: FileStorageMode::OnDisk(temp_file.clone()),
+            temp_guard: None,
+        };
+
+        // Save should copy from disk location
+        let result = file_input.save(&dest_file).await;
+        assert!(result.is_ok());
+
+        // Verify content was copied correctly
+        let content = tokio::fs::read_to_string(&dest_file).await.unwrap();
+        assert_eq!(content, "Disk stored content");
+
+        // Cleanup
+        let _ = tokio::fs::remove_file(&temp_file).await;
+        let _ = tokio::fs::remove_file(&dest_file).await;
+    }
+
+    // Test 17: Disk streaming - read_bytes from OnDisk file
+    #[tokio::test]
+    async fn test_read_bytes_from_ondisk() {
+        use crate::multipart::FileStorageMode;
+
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("test_read_ondisk.txt");
+
+        // Write test content
+        tokio::fs::write(&temp_file, "Test bytes content").await.unwrap();
+
+        let file_input = FileInput {
+            field_name: "file".to_string(),
+            file_name: "test.txt".to_string(),
+            content_type: "text/plain".to_string(),
+            size: 18,
+            bytes: vec![],
+            extension: Some("txt".to_string()),
+            content_disposition: Default::default(),
+            storage_mode: FileStorageMode::OnDisk(temp_file.clone()),
+            temp_guard: None,
+        };
+
+        // read_bytes should work for disk-stored files
+        let bytes = file_input.read_bytes().await.unwrap();
+        assert_eq!(bytes, b"Test bytes content");
+
+        // Cleanup
+        let _ = tokio::fs::remove_file(&temp_file).await;
+    }
+
+    // Test 18: Default config has sensible limits
+    #[tokio::test]
+    async fn test_default_config_limits() {
+        let config = crate::multipart::MultipartConfig::default();
+
+        // Should have default limits to prevent DoS
+        assert!(config.max_file_size.is_some());
+        assert!(config.max_total_payload_size.is_some());
+
+        // Verify reasonable defaults (10 MB file, 50 MB total)
+        assert_eq!(config.max_file_size.unwrap(), 10 * 1024 * 1024);
+        assert_eq!(config.max_total_payload_size.unwrap(), 50 * 1024 * 1024);
+    }
+
+    // Test 19: Path traversal prevention
+    #[tokio::test]
+    async fn test_path_traversal_prevention() {
+        use crate::content_disposition::ContentDisposition;
+        use ntex::http::header::{HeaderName, HeaderValue};
+        use std::str::FromStr;
+        use std::collections::HashMap;
+
+        let mut headers = ntex::http::HeaderMap::new();
+        headers.insert(
+            HeaderName::from_str("content-type").unwrap(),
+            HeaderValue::from_str("text/plain").unwrap(),
+        );
+
+        // Create ContentDisposition with path traversal attempt
+        let mut variables = HashMap::new();
+        variables.insert("name".to_string(), "file".to_string());
+        variables.insert("filename".to_string(), "../../etc/passwd".to_string());
+        let cd = ContentDisposition::from(variables);
+
+        let temp_dir = std::env::temp_dir();
+        let result = FileInput::create_with_disk(&headers, cd, &temp_dir);
+
+        assert!(result.is_ok());
+        let file_input = result.unwrap();
+
+        // Verify the path doesn't contain ".." components
+        if let crate::multipart::FileStorageMode::OnDisk(path) = &file_input.storage_mode {
+            let path_str = path.to_string_lossy();
+            // The sanitized filename should not contain path separators
+            assert!(!path_str.contains(".."), "Path traversal not prevented: {}", path_str);
+        } else {
+            panic!("Expected OnDisk storage mode");
+        }
     }
 }

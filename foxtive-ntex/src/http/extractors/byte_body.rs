@@ -1,6 +1,7 @@
+use foxtive::enums::AppMessage;
 use crate::error::HttpError;
-use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
-use foxtive::prelude::{AppMessage, AppResult};
+use crate::http::server::BodyConfig;
+use foxtive::results::AppResult;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
@@ -43,9 +44,8 @@ impl ByteBody {
 
     /// Tries to interpret the bytes as a UTF-8 string.
     pub fn as_utf8(&self) -> AppResult<&str> {
-        std::str::from_utf8(&self.bytes).map_err(|e| {
-            HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error()
-        })
+        std::str::from_utf8(&self.bytes)
+            .map_err(|e| AppMessage::invalid(e.to_string()))
     }
 }
 
@@ -66,8 +66,11 @@ impl From<&[u8]> for ByteBody {
 impl<Err> FromRequest<Err> for ByteBody {
     type Error = HttpError;
 
-    async fn from_request(_req: &HttpRequest, payload: &mut Payload) -> Result<Self, Self::Error> {
-        let max_size = FOXTIVE_NTEX.app().body_config.byte_limit;
+    async fn from_request(req: &HttpRequest, payload: &mut Payload) -> Result<Self, Self::Error> {
+        let max_size = req
+            .app_state::<BodyConfig>()
+            .map(|c| c.byte_limit)
+            .unwrap_or(262_144);
         let mut bytes = BytesMut::new();
         let mut total_size = 0;
 

@@ -1,6 +1,6 @@
 use crate::error::HttpError;
-use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
-use foxtive::prelude::{AppMessage, AppResult};
+use crate::http::server::BodyConfig;
+use foxtive::prelude::AppMessage;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
 use ntex::web::{FromRequest, HttpRequest};
@@ -43,13 +43,13 @@ impl StringBody {
 
     /// Tries to parse the body to a specific type that implements `FromStr`.
     /// Returns an application-level result or an error if parsing fails.
-    pub fn parse<T: std::str::FromStr>(&self) -> AppResult<T>
+    pub fn parse<T: std::str::FromStr>(&self) -> Result<T, AppMessage>
     where
         <T as std::str::FromStr>::Err: ToString,
     {
         self.body
             .parse::<T>()
-            .map_err(|e| HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error())
+            .map_err(|e| AppMessage::invalid(e.to_string()))
     }
 }
 
@@ -70,8 +70,11 @@ impl From<&str> for StringBody {
 impl<Err> FromRequest<Err> for StringBody {
     type Error = HttpError;
 
-    async fn from_request(_req: &HttpRequest, payload: &mut Payload) -> Result<Self, Self::Error> {
-        let max_size = FOXTIVE_NTEX.app().body_config.string_limit;
+    async fn from_request(req: &HttpRequest, payload: &mut Payload) -> Result<Self, Self::Error> {
+        let max_size = req
+            .app_state::<BodyConfig>()
+            .map(|c| c.string_limit)
+            .unwrap_or(262_144);
         let mut bytes = BytesMut::new();
         let mut total_size = 0;
 
@@ -98,7 +101,6 @@ impl<Err> FromRequest<Err> for StringBody {
 mod tests {
     use super::*;
     use ntex::http::StatusCode;
-    use ntex::web::WebResponseError;
 
     #[test]
     fn test_body_and_into_body() {
@@ -139,12 +141,12 @@ mod tests {
     #[test]
     fn test_parse_failure() {
         let s = StringBody::from("not_a_number");
-        let result: AppResult<i32> = s.parse();
+        let result = s.parse::<i32>();
         assert!(result.is_err());
-        let err = result.unwrap_err().downcast::<HttpError>().unwrap();
+        let err = result.unwrap_err();
         assert_eq!(err.status_code(), StatusCode::BAD_REQUEST);
         // Message should include 'invalid digit' for i32::FromStr
-        assert!(err.to_string().to_lowercase().contains("invalid"));
+        assert!(err.message().to_lowercase().contains("invalid"));
     }
 
     #[test]

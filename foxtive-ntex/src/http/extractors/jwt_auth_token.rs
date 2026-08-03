@@ -38,7 +38,7 @@ impl JwtAuthToken {
             Ok(TokenData { claims, .. }) => Ok(claims),
             Err(e) => {
                 error!("JWT decode error: {e:?}");
-                Err(HttpError::AppMessage(AppMessage::invalid(e.to_string())).into_app_error())
+                Err(AppMessage::invalid(e.to_string()))
             }
         }
     }
@@ -80,10 +80,10 @@ impl<Err> FromRequest<Err> for JwtAuthToken {
                 HttpError::AppMessage(AppMessage::invalid(
                     "Missing or malformed Authorization header",
                 ))
-                .into_app_error()
             })?;
 
-        debug!("[jwt-auth-token] extracted {token}");
+        let preview = if token.len() > 8 { &token[..8] } else { token };
+        debug!("[jwt-auth-token] extracted {preview}...");
 
         Ok(JwtAuthToken {
             token: token.to_string(),
@@ -94,7 +94,7 @@ impl<Err> FromRequest<Err> for JwtAuthToken {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use foxtive::helpers::jwt::Algorithm;
+    use foxtive::helpers::jwt::JwtAlgorithm;
     use jsonwebtoken::{EncodingKey, Header, encode};
     use ntex::http::{Payload, header};
     use ntex::web::test::TestRequest;
@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(token.token(), jwt);
 
         // Show decode utility
-        let validation = Validation::new(Algorithm::HS256);
+        let validation = Validation::new(JwtAlgorithm::HS256);
         let decoded: TestClaims = token.decode(secret, &validation).unwrap();
         assert_eq!(decoded, claims);
     }

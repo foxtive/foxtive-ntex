@@ -197,9 +197,9 @@ mod tests {
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         let resp_body = collect_raw_body(response).await;
         let body: serde_json::Value = serde_json::from_str(&resp_body).unwrap();
-        assert_eq!(body["code"], "010");
+        assert_eq!(body["code"], "017");
         assert_eq!(body["success"], false);
         assert_eq!(body["message"], "Internal Server Error");
-        assert_eq!(body["data"], serde_json::to_value(json_empty()).unwrap()); // assuming `json_empty()` returns an empty object
+        assert_eq!(body["data"], serde_json::to_value(json_empty()).unwrap());
     }
 }

@@ -20,7 +20,7 @@ pub struct Route {
     pub controllers: Vec<Controller>,
 }
 
-pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
+pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>, health_check_path: Option<&str>) {
     tracing::debug!("discovering routes...");
 
     for route in routes {
@@ -45,16 +45,25 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>) {
     }
 
     tracing::debug!("route discovery finished");
+
+    // Register built-in health check endpoint if configured
+    if let Some(path) = health_check_path {
+        tracing::debug!("registering health check endpoint at: {}", path);
+        config.service(
+            web::resource(path).route(web::get().to(crate::http::health::health_handler))
+        );
+    }
 }
 
-pub fn setup_logger() -> Logger {
-    Logger::default()
-        .exclude("/favicon.ico")
-        .exclude("/system/health-check")
-        .exclude("/api/v1/admin/health-check")
+pub fn setup_logger(exclude_paths: &[String]) -> Logger {
+    let mut logger = Logger::default();
+    for path in exclude_paths {
+        logger = logger.exclude(path);
+    }
+    logger
 }
 
-pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>) -> Cors {
+pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>, extra_headers: &[header::HeaderName]) -> Cors {
     let mut cors = Cors::new();
 
     // Handle wildcard separately from specific origins
@@ -83,8 +92,11 @@ pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>) -> Cors {
         methods
     };
 
+    let mut headers = vec![header::AUTHORIZATION, header::ACCEPT];
+    headers.extend(extra_headers.iter().cloned());
+
     cors.allowed_methods(allowed_methods)
-        .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+        .allowed_headers(headers)
         .allowed_header(header::CONTENT_TYPE)
         .max_age(3600)
 }

@@ -3,6 +3,7 @@ use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
 
 pub mod extractors;
+pub mod health;
 pub mod kernel;
 pub mod middlewares;
 pub mod responder;
@@ -46,7 +47,7 @@ impl<T> IntoAppResult<T> for Result<AppResult<T>, BlockingError<AppMessage>> {
 impl<T> IntoAppResult<T> for Result<T, BlockingError<AppMessage>> {
     fn into_app_result(self) -> AppResult<T> {
         self.map_err(|err| match err {
-            BlockingError::Error(err) => err.into_anyhow(),
+            BlockingError::Error(err) => err,
             BlockingError::Canceled => internal_server_error!("Internal Server Error"),
         })
     }
@@ -62,7 +63,7 @@ impl IntoHttpResult for AppResult<AppMessage> {
     fn into_http_result(self) -> HttpResult {
         match self {
             Ok(res) => Ok(Responder::message(&res.message(), ResponseCode::Ok)),
-            Err(err) => Err(HttpError::AppError(err)),
+            Err(err) => Err(HttpError::AppMessage(err)),
         }
     }
 }

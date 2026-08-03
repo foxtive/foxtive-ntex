@@ -6,16 +6,16 @@ pub use config::{BodyConfig, ServerBuilder};
 #[allow(deprecated)]
 pub use config::JsonConfig;
 
-use crate::FoxtiveNtexState;
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger};
-use crate::setup::{FoxtiveNtexSetup, make_ntex_state};
-use foxtive::Error;
+use crate::setup::{NtexSetup, build_app_state};
 use foxtive::prelude::AppResult;
 use foxtive::setup::load_environment_variables;
 use foxtive::setup::trace::Tracing;
+use foxtive::App;
 use ntex::io::IoConfig;
 use ntex::{SharedCfg, web};
 use std::future::Future;
+use std::sync::Arc;
 use tracing::{debug, error};
 
 pub fn init_bootstrap(service: &str, config: Tracing) -> AppResult<()> {
@@ -29,37 +29,41 @@ pub async fn start_ntex_server<Callback, Fut>(
     callback: Callback,
 ) -> AppResult<()>
 where
-    Callback: FnOnce(FoxtiveNtexState) -> Fut + Copy + Send + 'static,
+    Callback: FnOnce(Arc<App>) -> Fut + Copy + Send + 'static,
     Fut: Future<Output = AppResult<()>> + Send + 'static,
 {
+    let app = builder.app.clone();
+
     if !builder.has_started_bootstrap {
         let t_config = builder.tracing.unwrap_or_default();
         debug!("Starting bootstrap");
-        init_bootstrap(&builder.app, t_config).expect("failed to init bootstrap: ");
+        init_bootstrap(app.app_name(), t_config)?;
     }
 
-    debug!("Creating Foxtive-Ntex state");
-    let body_config = builder.body_config.unwrap_or_default();
+    debug!("Creating ntex app state");
+    let body_config = builder.body_config.clone().unwrap_or_default();
     let custom_state_builder = builder.custom_state_builder;
-    let app_state = make_ntex_state(FoxtiveNtexSetup {
+    let app_state = build_app_state(NtexSetup {
         allowed_origins: builder.allowed_origins,
         allowed_methods: builder.allowed_methods,
-        foxtive_setup: builder.foxtive_setup,
         body_config: body_config.clone(),
         custom_state_builder,
-    })
-    .await?;
+    });
 
     debug!("Executing app bootstrap callback");
-    match callback(app_state.clone()).await {
-        Ok(_) => {}
-        Err(err) => {
-            error!("app bootstrap callback returned error: {err:?}");
-            panic!("boostrap failed");
-        }
+    if let Err(err) = callback(app.clone()).await {
+        error!("app bootstrap callback returned error: {err:?}");
+        app.shutdown().await;
+        return Err(err);
     }
 
+    // Run foxtive startup hooks
+    app.run_startup_hooks().await?;
+
     let route_factory = builder.route_factory;
+    let configure_fn = builder.configure_fn;
+    let raw_configures = builder.raw_configures;
+    let health_check_path = builder.health_check_path;
     let ntex_json_config = web::types::JsonConfig::default().limit(body_config.json_limit);
 
     let shared_config = SharedCfg::new("WEB").add(
@@ -69,18 +73,32 @@ where
             .set_disconnect_timeout(builder.client_disconnect),
     );
 
+    let app_for_server = app.clone();
     let server = web::HttpServer::new(async move || {
-        let routes = route_factory();
-
         let app = web::App::new()
+            .state(app_for_server.clone())
             .state(ntex_json_config.clone())
             .state(app_state.clone())
-            .configure(|cfg| register_routes(cfg, routes))
-            .middleware(setup_logger())
+            .state(body_config.clone())
+            .configure(|cfg| {
+                // configure() takes full control; otherwise fall back to route_factory
+                if let Some(ref f) = configure_fn {
+                    f(cfg);
+                } else {
+                    let routes = route_factory();
+                    register_routes(cfg, routes, health_check_path.as_deref());
+                }
+                // additive raw configure callbacks
+                for f in &raw_configures {
+                    f(cfg);
+                }
+            })
+            .middleware(setup_logger(&builder.logger_exclude_paths))
             .middleware(
                 setup_cors(
                     app_state.allowed_origins.clone(),
                     app_state.allowed_methods.clone(),
+                    &builder.allowed_cors_headers,
                 )
                 .finish(),
             )
@@ -103,7 +121,6 @@ where
     .workers(builder.workers)
     .maxconn(builder.max_connections)
     .maxconnrate(builder.max_connections_rate)
-    // .keep_alive(config.keep_alive)
     .bind((builder.host, builder.port))?
     .run();
 
@@ -126,13 +143,27 @@ where
     });
 
     // await server
-    server.await.map_err(Error::from)?;
+    server.await.map_err(|e| foxtive::prelude::AppMessage::Infrastructure {
+        message: "Server error".to_string(),
+        source: Some(Box::new(e)),
+    })?;
 
-    // AFTER server fully stops, run cleanup handler
+    // AFTER server fully stops, run cleanup handler and foxtive shutdown hooks
     if let Some(on_shutdown) = builder.on_shutdown {
         debug!("Running shutdown handler");
         on_shutdown.await;
     }
+
+    // Run registered shutdown services (ShutdownRegistry)
+    let mut registry = builder.shutdown_registry;
+    if !registry.is_empty() {
+        let timeout = builder.shutdown_config.map(|c| c.timeout);
+        debug!("Running {} shutdown services via ShutdownRegistry", registry.len());
+        registry.shutdown_all(timeout).await;
+    }
+
+    // Run foxtive shutdown hooks
+    app.shutdown().await;
 
     Ok(())
 }

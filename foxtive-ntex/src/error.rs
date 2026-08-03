@@ -1,6 +1,4 @@
 use crate::error::helpers::make_http_error_response;
-use crate::http::response::anyhow::helpers::make_status_code;
-use foxtive::Error;
 use foxtive::prelude::AppMessage;
 #[cfg(feature = "multipart")]
 use foxtive_ntex_multipart::{ErrorMessage as MultipartErrorMessage, MultipartError};
@@ -16,8 +14,6 @@ use tokio::task::JoinError;
 pub enum HttpError {
     #[error("{0}")]
     Std(Box<dyn std::error::Error + Send + Sync + 'static>),
-    #[error("{0}")]
-    AppError(#[from] Error),
     #[error("{0}")]
     AppMessage(#[from] AppMessage),
     #[error("Payload Error: {0}")]
@@ -36,22 +32,16 @@ pub enum HttpError {
     MultipartError(#[from] MultipartError),
 }
 
-impl HttpError {
-    pub fn into_app_error(self) -> foxtive::Error {
-        foxtive::Error::from(self)
-    }
-}
-
 impl From<Box<dyn std::error::Error + Send + Sync>> for HttpError {
     fn from(error: Box<dyn std::error::Error + Send + Sync>) -> Self {
         HttpError::Std(error)
     }
 }
 
-impl From<BlockingError<Error>> for HttpError {
-    fn from(value: BlockingError<Error>) -> Self {
+impl From<BlockingError<AppMessage>> for HttpError {
+    fn from(value: BlockingError<AppMessage>) -> Self {
         match value {
-            BlockingError::Error(e) => HttpError::AppError(e),
+            BlockingError::Error(e) => HttpError::AppMessage(e),
             BlockingError::Canceled => {
                 HttpError::AppMessage(AppMessage::internal_server_error("Internal Server Error"))
             }
@@ -63,7 +53,6 @@ impl WebResponseError for HttpError {
     fn status_code(&self) -> StatusCode {
         match self {
             HttpError::AppMessage(m) => m.status_code(),
-            HttpError::AppError(e) => make_status_code(e),
             #[cfg(feature = "validator")]
             HttpError::ValidationError(_) => StatusCode::BAD_REQUEST,
             HttpError::PayloadError(_) | HttpError::JsonError(_) => StatusCode::BAD_REQUEST,
@@ -91,17 +80,20 @@ pub(crate) mod helpers {
     use crate::enums::ResponseCode;
     use crate::http::HttpError;
     use crate::http::responder::Responder;
-    use crate::http::response::anyhow::helpers::make_response;
+    use crate::http::response::error::helpers::make_json_response;
     use foxtive::prelude::AppMessage;
     #[cfg(feature = "multipart")]
     use foxtive_ntex_multipart::MultipartError;
+    use ntex::http::StatusCode;
     use ntex::web::HttpResponse;
     use tracing::error;
 
     pub(crate) fn make_http_error_response(err: &HttpError) -> HttpResponse {
         match err {
-            HttpError::AppMessage(m) => make_response(&m.clone().into_anyhow()),
-            HttpError::AppError(e) => make_response(e),
+            HttpError::AppMessage(m) => {
+                m.log();
+                make_json_response(m.message(), m.status_code())
+            }
             #[cfg(feature = "validator")]
             HttpError::ValidationError(e) => {
                 Responder::send_msg(e.errors(), ResponseCode::BadRequest, "Validation Error")
@@ -139,9 +131,10 @@ pub(crate) mod helpers {
             },
             _ => {
                 error!("Error: {err}");
-                make_response(&foxtive::Error::from(AppMessage::internal_server_error(
-                    "Internal Server Error",
-                )))
+                make_json_response(
+                    AppMessage::internal_server_error("Internal Server Error").message(),
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                )
             }
         }
     }
@@ -150,21 +143,11 @@ pub(crate) mod helpers {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use foxtive::Error;
-
-    #[test]
-    fn test_app_error() {
-        let error = HttpError::AppError(Error::from(AppMessage::internal_server_error(
-            "Internal Server Error",
-        )));
-        let app_error = make_http_error_response(&error);
-        assert_eq!(app_error.status(), 500);
-    }
 
     #[test]
     fn test_app_message() {
         let error = HttpError::AppMessage(AppMessage::internal_server_error("Error"));
-        let app_error = make_http_error_response(&error);
+        let app_error = helpers::make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }
 
@@ -175,14 +158,14 @@ mod tests {
             std::io::ErrorKind::Other,
             "Test",
         )));
-        let app_error = make_http_error_response(&error);
+        let app_error = helpers::make_http_error_response(&error);
         assert_eq!(app_error.status(), 500);
     }
 
     #[test]
     fn test_payload_error() {
         let error = HttpError::PayloadError(PayloadError::Overflow);
-        let app_error = make_http_error_response(&error);
+        let app_error = helpers::make_http_error_response(&error);
         assert_eq!(app_error.status(), 400);
     }
 
@@ -190,7 +173,7 @@ mod tests {
     #[test]
     fn test_validation_error() {
         let error = HttpError::ValidationError(validator::ValidationErrors::new());
-        let app_error = make_http_error_response(&error);
+        let app_error = helpers::make_http_error_response(&error);
         assert_eq!(app_error.status(), 400);
     }
 
@@ -208,7 +191,7 @@ mod tests {
             name: "image".to_string(),
         }));
 
-        let app_error = make_http_error_response(&error);
+        let app_error = helpers::make_http_error_response(&error);
 
         assert_eq!(app_error.status(), 400);
     }

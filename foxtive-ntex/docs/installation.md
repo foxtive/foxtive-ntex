@@ -1,11 +1,11 @@
-## Foxtive-Ntex Installation
+## Installation
 
-Run below command
 ```bash
 cargo add foxtive-ntex
 ```
 
-Or add below line to your `Cargo.toml`
+Or add to your `Cargo.toml`:
+
 ```toml
-foxtive-ntex = { version = "0.1.0" }
+foxtive-ntex = "1.0"
 ```

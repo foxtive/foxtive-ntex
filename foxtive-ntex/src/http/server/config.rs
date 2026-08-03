@@ -1,11 +1,12 @@
 use crate::http::kernel::Route;
 use crate::http::shutdown::{ShutdownConfig, ShutdownRegistry};
 use crate::http::Method;
-use crate::FoxtiveNtexState;
 use foxtive::prelude::AppResult;
 use foxtive::setup::trace::Tracing;
-use foxtive::setup::FoxtiveSetup;
+use foxtive::App;
+use ntex::http::header;
 use ntex::time::Seconds;
+use ntex::web::ServiceConfig;
 use std::any::Any;
 use std::collections::HashMap;
 use std::future::Future;
@@ -134,8 +135,7 @@ pub struct ServerBuilder {
 
     pub(crate) body_config: Option<BodyConfig>,
 
-    pub(crate) app: String,
-    pub(crate) foxtive_setup: FoxtiveSetup,
+    pub(crate) app: Arc<App>,
 
     pub(crate) tracing: Option<Tracing>,
 
@@ -151,6 +151,13 @@ pub struct ServerBuilder {
 
     pub(crate) route_factory: Arc<dyn Fn() -> Vec<Route> + Send + Sync>,
 
+    /// Complete replacement for route_factory — receives raw `ServiceConfig`.
+    /// When set, `route_factory` is ignored.
+    pub(crate) configure_fn: Option<Arc<dyn Fn(&mut ServiceConfig) + Send + Sync>>,
+
+    /// Additive raw ntex configure callbacks, called after route registration.
+    pub(crate) raw_configures: Vec<Arc<dyn Fn(&mut ServiceConfig) + Send + Sync>>,
+
     pub(crate) on_shutdown: Option<ShutdownSignalHandler>,
 
     pub(crate) shutdown_signal: Option<Pin<Box<dyn Future<Output = ()> + Send>>>,
@@ -160,10 +167,28 @@ pub struct ServerBuilder {
     pub(crate) shutdown_registry: ShutdownRegistry,
 
     pub(crate) custom_state_builder: Option<CustomStateBuilderFn>,
+
+    /// Additional CORS allowed headers beyond the defaults
+    /// (Authorization, Accept, Content-Type).
+    pub(crate) allowed_cors_headers: Vec<header::HeaderName>,
+
+    /// Paths excluded from the access logger.
+    pub(crate) logger_exclude_paths: Vec<String>,
+
+    /// Optional path at which the built-in health check endpoint is registered.
+    pub(crate) health_check_path: Option<String>,
+
+    /// OpenSSL TLS acceptor (requires the `openssl` feature).
+    #[cfg(feature = "openssl")]
+    pub(crate) tls_openssl: Option<openssl::ssl::SslAcceptor>,
+
+    /// Rustls TLS configuration (requires the `rustls` feature).
+    #[cfg(feature = "rustls")]
+    pub(crate) tls_rustls: Option<std::sync::Arc<rustls::ServerConfig>>,
 }
 
 impl ServerBuilder {
-    pub fn create(host: &str, port: u16, setup: FoxtiveSetup) -> ServerBuilder {
+    pub fn create(host: &str, port: u16, app: Arc<App>) -> ServerBuilder {
         ServerBuilder {
             host: host.to_string(),
             port,
@@ -174,14 +199,15 @@ impl ServerBuilder {
             client_disconnect: Seconds(5),
             keep_alive: Seconds(5),
             backlog: 2048,
-            app: "foxtive".to_string(),
-            foxtive_setup: setup,
+            app,
             #[cfg(feature = "static")]
             static_config: StaticFileConfig::default(),
             has_started_bootstrap: false,
             allowed_origins: vec![],
             allowed_methods: vec![],
             route_factory: Arc::new(Vec::new),
+            configure_fn: None,
+            raw_configures: vec![],
             tracing: None,
             body_config: None,
             on_shutdown: None,
@@ -189,6 +215,17 @@ impl ServerBuilder {
             shutdown_config: None,
             shutdown_registry: ShutdownRegistry::new(),
             custom_state_builder: None,
+            allowed_cors_headers: vec![],
+            logger_exclude_paths: vec![
+                "/favicon.ico".into(),
+                "/system/health-check".into(),
+                "/api/v1/admin/health-check".into(),
+            ],
+            health_check_path: None,
+            #[cfg(feature = "openssl")]
+            tls_openssl: None,
+            #[cfg(feature = "rustls")]
+            tls_rustls: None,
         }
     }
 
@@ -196,15 +233,10 @@ impl ServerBuilder {
     pub fn create_with_static(
         host: &str,
         port: u16,
-        setup: FoxtiveSetup,
+        app: Arc<App>,
         config: StaticFileConfig,
     ) -> ServerBuilder {
-        Self::create(host, port, setup).static_config(config)
-    }
-
-    pub fn app(mut self, app: &str) -> Self {
-        self.app = app.to_string();
-        self
+        Self::create(host, port, app).static_config(config)
     }
 
     pub fn tracing(mut self, config: Tracing) -> Self {
@@ -323,10 +355,71 @@ impl ServerBuilder {
         self.route_factory = factory;
         self
     }
-
-    #[deprecated(since = "0.32.0", note = "Use route_factory instead")]
-    pub fn boot_thread<F: Fn() -> Vec<Route> + Send + Sync + 'static>(self, factory: F) -> Self {
-        self.route_factory(factory)
+    
+    /// Configure routes using ntex's native [`ServiceConfig`] API directly.
+    ///
+    /// This is a **complete replacement** for [`route_factory`](Self::route_factory).
+    /// When set, the route factory is ignored and this function receives full
+    /// control over route registration, giving you access to all ntex features
+    /// (scopes, resources, guards, custom error handlers, per-scope data, etc.).
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// ServerBuilder::create("0.0.0.0", 3000, app)
+    ///     .configure(|cfg| {
+    ///         cfg.service(
+    ///             web::scope("/api/v1")
+    ///                 .middleware(auth_middleware)
+    ///                 .service(users_handler)
+    ///                 .service(posts_handler),
+    ///         );
+    ///         cfg.service(
+    ///             web::scope("/public")
+    ///                 .service(health_handler),
+    ///         );
+    ///     })
+    ///     .start(|_| async { Ok(()) })
+    ///     .await
+    /// ```
+    pub fn configure<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut ServiceConfig) + Send + Sync + 'static,
+    {
+        self.configure_fn = Some(Arc::new(f));
+        self
+    }
+    
+    /// Register an additional raw ntex configure callback.
+    ///
+    /// Unlike [`configure`](Self::configure), this is **additive** — callbacks
+    /// are executed *after* the route factory (or `configure`) has registered
+    /// routes.  Multiple callbacks can be registered and they execute in the
+    /// order they were added.
+    ///
+    /// This is the escape hatch for mixing the framework's `Route`/`Controller`
+    /// system with raw ntex configuration (guards, custom error handlers,
+    /// resource-level settings, etc.).
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// ServerBuilder::create("0.0.0.0", 3000, app)
+    ///     .route_factory(my_routes)
+    ///     .raw_configure(|cfg| {
+    ///         cfg.service(
+    ///             web::resource("/special")
+    ///                 .guard(guard::Header("content-type", "application/json"))
+    ///                 .to(special_handler),
+    ///         );
+    ///     })
+    ///     .start(|_| async { Ok(()) })
+    ///     .await
+    /// ```
+    pub fn raw_configure<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut ServiceConfig) + Send + Sync + 'static,
+    {
+        self.raw_configures.push(Arc::new(f));
+        self
     }
 
     pub fn has_started_bootstrap(mut self, has_started_bootstrap: bool) -> Self {
@@ -339,11 +432,6 @@ impl ServerBuilder {
         self
     }
 
-    #[deprecated(since = "0.31.0", note = "Use body_config instead")]
-    pub fn json_config(self, config: BodyConfig) -> Self {
-        self.body_config(config)
-    }
-
     pub fn custom_state_builder(
         mut self,
         builder: CustomStateBuilderFn,
@@ -352,16 +440,48 @@ impl ServerBuilder {
         self
     }
 
+    /// Add extra header names to the CORS allowed-headers list.
+    ///
+    /// These are merged with the built-in defaults (Authorization, Accept,
+    /// Content-Type).
+    pub fn allowed_cors_headers(mut self, headers: Vec<header::HeaderName>) -> Self {
+        self.allowed_cors_headers = headers;
+        self
+    }
+
+    /// Set the paths that should be excluded from the access logger.
+    ///
+    /// Overrides the default exclusion list (`/favicon.ico`,
+    /// `/system/health-check`, `/api/v1/admin/health-check`).
+    pub fn logger_exclude_paths(mut self, paths: Vec<String>) -> Self {
+        self.logger_exclude_paths = paths;
+        self
+    }
+
+    /// Register a built-in health check endpoint at the given path.
+    ///
+    /// The handler calls [`App::check_health()`](foxtive::App::check_health)
+    /// and returns a JSON [`HealthReport`](foxtive::health::HealthReport).
+    pub fn health_check_path(mut self, path: impl Into<String>) -> Self {
+        self.health_check_path = Some(path.into());
+        self
+    }
+
+    /// Configure an OpenSSL TLS acceptor for the server.
+    #[cfg(feature = "openssl")]
+    pub fn tls_openssl(mut self, acceptor: openssl::ssl::SslAcceptor) -> Self {
+        self.tls_openssl = Some(acceptor);
+        self
+    }
+
+    /// Configure a Rustls TLS configuration for the server.
+    #[cfg(feature = "rustls")]
+    pub fn tls_rustls(mut self, config: std::sync::Arc<rustls::ServerConfig>) -> Self {
+        self.tls_rustls = Some(config);
+        self
+    }
+
     /// Sets a custom shutdown handler to be called when the application is shutting down.
-    ///
-    /// This method allows you to provide a future that will be awaited during shutdown.
-    /// It is typically used to perform cleanup tasks like closing database connections,
-    /// flushing logs, or other async teardown operations.
-    ///
-    /// **Note:** If a custom `shutdown_signal` is also provided using [`shutdown_signal`],
-    /// that will take precedence over this handler, and this `on_shutdown` handler will
-    /// **not** be executed.
-    ///
     pub fn on_shutdown<F>(mut self, func: F) -> Self
     where
         F: Future<Output = ()> + Send + 'static,
@@ -371,11 +491,6 @@ impl ServerBuilder {
     }
 
     /// Sets a custom shutdown signal handler that determines when the application should begin shutting down.
-    ///
-    /// This method allows you to provide a future that, when resolved, triggers the application shutdown.
-    /// It is typically used to listen for signals like `Ctrl+C` or system termination requests (`SIGTERM`).
-    ///
-    /// If this shutdown signal is provided, it will override any handler set using [`on_shutdown`].
     pub fn shutdown_signal<F>(mut self, func: F) -> Self
     where
         F: Future<Output = ()> + Send + 'static,
@@ -385,22 +500,6 @@ impl ServerBuilder {
     }
 
     /// Validate the server configuration before startup.
-    ///
-    /// This method checks for common configuration errors and warns about potentially
-    /// problematic settings. It returns an error if critical issues are found.
-    ///
-    /// # Validation Rules
-    /// - Port must not be 0
-    /// - Workers must be at least 1
-    /// - Backlog must not be negative
-    /// - Timeout values are checked for reasonable ranges (warnings only)
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerConfig;
-    /// // FoxtiveSetup must be created with your application's setup logic
-    /// // let config = ServerConfig::validate_example();
-    /// ```
     pub fn validate(&self) -> foxtive::results::AppResult<()> {
         use foxtive::internal_server_error;
 
@@ -461,25 +560,8 @@ impl ServerBuilder {
     }
 
     /// Create a server configuration with smart defaults for development.
-    ///
-    /// This is a convenience method that creates a configuration optimized for
-    /// local development with relaxed timeouts and single worker.
-    ///
-    /// # Defaults
-    /// - Workers: 1 (easier debugging)
-    /// - Client timeout: 60 seconds
-    /// - Keep-alive: 60 seconds
-    /// - Max connections: 1000
-    /// - Backlog: 256
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerConfig;
-    /// // FoxtiveSetup must be created with your application's setup logic
-    /// // let config = ServerConfig::dev_mode("127.0.0.1", 3000, setup);
-    /// ```
-    pub fn dev_mode(host: &str, port: u16, setup: FoxtiveSetup) -> Self {
-        Self::create(host, port, setup)
+    pub fn dev_mode(host: &str, port: u16, app: Arc<App>) -> Self {
+        Self::create(host, port, app)
             .workers(1)
             .client_timeout(60)
             .keep_alive(Seconds(60))
@@ -488,26 +570,9 @@ impl ServerBuilder {
     }
 
     /// Create a server configuration optimized for production deployment.
-    ///
-    /// This configuration uses conservative settings suitable for most production
-    /// workloads with good performance and resource management.
-    ///
-    /// # Defaults
-    /// - Workers: Auto-detected (number of CPU cores)
-    /// - Client timeout: 15 seconds
-    /// - Keep-alive: 30 seconds
-    /// - Max connections: 25,000
-    /// - Backlog: 2048
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerConfig;
-    /// // FoxtiveSetup must be created with your application's setup logic
-    /// // let config = ServerConfig::production_mode("0.0.0.0", 8080, setup);
-    /// ```
-    pub fn production_mode(host: &str, port: u16, setup: FoxtiveSetup) -> Self {
+    pub fn production_mode(host: &str, port: u16, app: Arc<App>) -> Self {
         let workers = num_cpus::get();
-        Self::create(host, port, setup)
+        Self::create(host, port, app)
             .workers(workers)
             .client_timeout(15)
             .keep_alive(ntex::time::Seconds(30))
@@ -516,31 +581,9 @@ impl ServerBuilder {
     }
 
     /// Create a server configuration optimized for high-performance scenarios.
-    ///
-    /// This configuration maximizes throughput and concurrent connections,
-    /// suitable for high-traffic APIs or microservices.
-    ///
-    /// # Defaults
-    /// - Workers: 2x CPU cores (for I/O-bound workloads)
-    /// - Client timeout: 5 seconds
-    /// - Keep-alive: 10 seconds
-    /// - Max connections: 50,000
-    /// - Max connection rate: 512
-    /// - Backlog: 4096
-    ///
-    /// # Warning
-    /// This configuration uses more resources. Monitor your system to ensure
-    /// it can handle the increased load.
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerConfig;
-    /// // FoxtiveSetup must be created with your application's setup logic
-    /// // let config = ServerConfig::high_performance_mode("0.0.0.0", 8080, setup);
-    /// ```
-    pub fn high_performance_mode(host: &str, port: u16, setup: FoxtiveSetup) -> Self {
+    pub fn high_performance_mode(host: &str, port: u16, app: Arc<App>) -> Self {
         let workers = num_cpus::get() * 2;
-        Self::create(host, port, setup)
+        Self::create(host, port, app)
             .workers(workers)
             .client_timeout(5)
             .keep_alive(Seconds(10))
@@ -550,47 +593,12 @@ impl ServerBuilder {
     }
 
     /// Configure shutdown behavior with timeout and cleanup coordination.
-    ///
-    /// This method sets up coordinated shutdown for all registered services.
-    /// Services are shut down in priority order with per-service timeouts.
-    ///
-    /// # Arguments
-    /// * `config` - Shutdown configuration with timeout settings
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::{ServerConfig, ShutdownConfig};
-    /// // FoxtiveSetup must be created with your application's setup logic
-    /// // let config = ServerConfig::create("127.0.0.1", 8080, setup)
-    /// //     .shutdown_config(ShutdownConfig::new(30));
-    /// ```
     pub fn shutdown_config(mut self, config: ShutdownConfig) -> Self {
         self.shutdown_config = Some(config);
         self
     }
 
     /// Register a service for graceful shutdown cleanup.
-    ///
-    /// Services are shut down in priority order (lower priority number first).
-    /// Each service has a timeout to prevent one slow service from blocking others.
-    ///
-    /// # Arguments
-    /// * `name` - Name of the service (for logging)
-    /// * `priority` - Shutdown priority (lower = shutdown first)
-    ///   - 0-10: Critical infrastructure (databases, message queues)
-    ///   - 11-50: Application services (caches, connection pools)
-    ///   - 51-100: Auxiliary services (loggers, metrics)
-    /// * `cleanup` - Async cleanup function to execute
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerBuilder;
-    /// // FoxtiveSetup must be created with your application's setup logic
-    /// // let config = ServerBuilder::create("127.0.0.1", 8080, setup)
-    /// //     .register_shutdown_service("database", 1, || async {
-    /// //         println!("Database closed");
-    /// //     });
-    /// ```
     pub fn register_shutdown_service<F, Fut>(mut self, name: &str, priority: u8, cleanup: F) -> Self
     where
         F: FnOnce() -> Fut + Send + 'static,
@@ -602,57 +610,18 @@ impl ServerBuilder {
 
     /// Start the HTTP server with an optional bootstrap callback.
     ///
-    /// This method validates the configuration, sets up the ntex server,
-    /// and starts listening for incoming requests.
-    ///
-    /// # Arguments
-    /// * `callback` - Optional async function that runs after state creation but before server starts.
-    ///   Useful for database migrations, cache warming, etc.
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerBuilder;
-    /// use foxtive::setup::FoxtiveSetup;
-    ///
-    /// let foxtive = FoxtiveSetup::default();
-    ///
-    /// ServerBuilder::dev_mode("127.0.0.1", 3000, foxtive)
-    ///     .on_shutdown(async {
-    ///         println!("Server shutting down gracefully");
-    ///     })
-    ///     .start(|state| async move {
-    ///         // Bootstrap code here (e.g., database migrations)
-    ///         println!("Server starting...");
-    ///         Ok(())
-    ///     })
-    ///     .await?;
-    /// ```
+    /// The callback receives `Arc<App>` for accessing the DI container.
     pub async fn start<Callback, Fut>(self, callback: Callback) -> AppResult<()>
     where
-        Callback: FnOnce(FoxtiveNtexState) -> Fut + Copy + Send + 'static,
+        Callback: FnOnce(Arc<App>) -> Fut + Copy + Send + 'static,
         Fut: Future<Output = AppResult<()>> + Send + 'static,
     {
         super::start_ntex_server(self, callback).await
     }
 
     /// Start the HTTP server without a bootstrap callback.
-    ///
-    /// This is a convenience method for simple servers that don't need
-    /// initialization logic before starting.
-    ///
-    /// # Example
-    /// ```rust,ignore
-    /// use foxtive_ntex::http::server::ServerBuilder;
-    /// use foxtive::setup::FoxtiveSetup;
-    ///
-    /// let foxtive = FoxtiveSetup::default();
-    ///
-    /// ServerBuilder::production_mode("0.0.0.0", 8080, foxtive)
-    ///     .run()
-    ///     .await?;
-    /// ```
     pub async fn run(self) -> AppResult<()> {
-        self.start(|_state| async { Ok(()) }).await
+        self.start(|_app| async { Ok(()) }).await
     }
 }
 

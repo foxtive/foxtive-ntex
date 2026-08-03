@@ -16,3 +16,13 @@ pub use file_validator::*;
 pub use multipart::{FileStorageMode, Multipart, MultipartBuilder, MultipartConfig};
 pub use result::MultipartError;
 pub type MultipartResult<T> = Result<T, MultipartError>;
+
+// Compile-time assertion that Multipart is Send + Sync for safe use across async boundaries
+const _: () = {
+    fn _assert_send_sync<T: Send + Sync>() {}
+    fn _check() {
+        _assert_send_sync::<Multipart>();
+        _assert_send_sync::<FileInput>();
+        _assert_send_sync::<DataInput>();
+    }
+};

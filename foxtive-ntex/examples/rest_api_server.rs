@@ -6,11 +6,10 @@
 use foxtive::prelude::*;
 use foxtive::Environment;
 use foxtive_ntex::app_state_ext;
-use foxtive_ntex::http::kernel::{Controller, Route};
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, Method};
-use foxtive_ntex::{AppState, ServerBuilder};
-use ntex::web::{get, HttpRequest};
+use foxtive_ntex::ServerBuilder;
+use ntex::web::{self, get, HttpRequest};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -89,64 +88,40 @@ app_state_ext! {
 
 #[ntex::main]
 async fn main() -> AppResult<()> {
-    let config = AppConfig {
-        app_name: "My Awesome API".to_string(),
-        version: "1.0.0".to_string(),
-        environment: "development".to_string(),
-        debug_mode: true,
-    };
-
     let db_pool = DatabasePool::new("postgresql://localhost:5432/mydb", 10);
 
-    use foxtive_ntex::http::server::BodyConfig;
+    let app = App::builder("rest-api-server", "rest-api")
+        .environment(Environment::Development)
+        .app_key("demo-app-key")
+        .private_key("demo-private-key")
+        .public_key("demo-public-key")
+        .build()
+        .await?;
 
-    let _state = AppState::builder(BodyConfig::default())
-        .with_allowed_origin("http://localhost:3000")
-        .with_allowed_origin("https://example.com")
-        .with_allowed_method(Method::GET)
-        .with_allowed_method(Method::POST)
-        .with_allowed_method(Method::PUT)
-        .with_allowed_method(Method::DELETE)
-        .with_body_config(BodyConfig::default().json_limit(1024 * 1024))
-        .with_value("db_pool", db_pool.clone())
-        .with_value("app_config", config.clone())
-        .build();
-
-    let route_factory = || {
-        vec![Route {
-            controllers: vec![Controller::new("", |cfg| {
-                cfg.service(root_handler)
-                    .service(health_handler)
-                    .service(users_handler);
-            })],
-            prefix: "/".to_string(),
-            middlewares: vec![],
-        }]
-    };
-
-    let foxtive = foxtive::setup::FoxtiveSetup {
-        env_prefix: "REST_API".to_string(),
-        private_key: "demo-private-key".to_string(),
-        public_key: "demo-public-key".to_string(),
-        app_key: "demo-app-key".to_string(),
-        app_code: "rest-api".to_string(),
-        app_name: "rest-api-server".to_string(),
-        env: Environment::Development,
-        #[cfg(feature = "jwt")]
-        jwt_iss_public_key: "".to_string(),
-        #[cfg(feature = "jwt")]
-        jwt_token_lifetime: 0,
-        #[cfg(feature = "database")]
-        db_config: foxtive::database::DbConfig::create("sqlite::memory:"),
-    };
-
-    println!("📡 Server starting on http://127.0.0.1:3000");
+    println!("Starting server on http://127.0.0.1:3000");
     println!("Press Ctrl+C to stop\n");
 
-    ServerBuilder::dev_mode("127.0.0.1", 3000, foxtive)
-        .allowed_origins(vec!["http://localhost:3000".to_string(), "https://example.com".to_string()])
+    ServerBuilder::dev_mode("127.0.0.1", 3000, app)
+        .allowed_origins(vec![
+            "http://localhost:3000".to_string(),
+            "https://example.com".to_string(),
+        ])
         .allowed_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .route_factory(route_factory)
+        .configure(|cfg| {
+            cfg.service(root_handler)
+                .service(health_handler)
+                .service(users_handler);
+        })
+        // raw_configure lets you add routes alongside the main configure() block
+        .raw_configure(|cfg| {
+            cfg.service(
+                web::resource("/api/ping").route(
+                    web::get().to(|| async {
+                        serde_json::json!({"msg": "pong"}).respond()
+                    })
+                ),
+            );
+        })
         .shutdown_config(foxtive_ntex::ShutdownConfig::new(30))
         .register_shutdown_service("database", 1, move || {
             let pool = db_pool.clone();
@@ -154,15 +129,12 @@ async fn main() -> AppResult<()> {
                 pool.close().await;
             }
         })
-        .start(|_state| async move { Ok(()) })
+        .start(|_app| async move { Ok(()) })
         .await?;
 
     Ok(())
 }
 
-// ============================================================================
-// Route Handlers
-// ============================================================================
 
 #[get("/")]
 async fn root_handler(_req: HttpRequest) -> HttpResult {
