@@ -14,7 +14,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 /// Configuration for multipart request processing
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MultipartConfig {
     /// Maximum size for a single file in bytes
     pub max_file_size: Option<usize>,
@@ -25,6 +25,17 @@ pub struct MultipartConfig {
     /// Threshold size (in bytes) above which files are streamed to disk
     /// Files smaller than this are kept in memory for performance
     pub disk_threshold: Option<usize>,
+}
+
+impl Default for MultipartConfig {
+    fn default() -> Self {
+        Self {
+            max_file_size: Some(10 * 1024 * 1024), // 10 MB
+            max_total_payload_size: Some(50 * 1024 * 1024), // 50 MB
+            temp_dir: None,
+            disk_threshold: None,
+        }
+    }
 }
 
 /// Storage mode for uploaded files
@@ -222,10 +233,9 @@ impl Multipart {
                     }
 
                     // Process file fields
-                    let should_use_disk = self.config.disk_threshold.is_some() 
-                        || self.config.temp_dir.is_some();
-                    
-                    let mut info = if should_use_disk {
+                    // Determine storage mode: use disk if temp_dir is configured
+                    // disk_threshold is checked dynamically during streaming
+                    let mut info = if self.config.temp_dir.is_some() {
                         // Create FileInput for disk streaming
                         if let Some(temp_dir) = &self.config.temp_dir {
                             FileInput::create_with_disk(field.headers(), content_disposition, temp_dir)?
@@ -242,12 +252,15 @@ impl Multipart {
 
                     // Handle disk streaming
                     if info.is_on_disk() {
-                        use tokio::io::AsyncWriteExt;
-                        
                         // Get the temp file path
                         let temp_path = match &info.storage_mode {
                             FileStorageMode::OnDisk(path) => path.clone(),
-                            _ => unreachable!(),
+                            FileStorageMode::InMemory => {
+                                return Err(MultipartError::IoError(std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData,
+                                    "Expected disk storage but found in-memory",
+                                )));
+                            }
                         };
                         
                         // Create buffered writer for efficient I/O
@@ -359,22 +372,38 @@ impl Multipart {
         let mut value = String::new();
         while let Some(chunk) = field.next().await {
             let chunk_data = chunk.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
-            value.push_str(&String::from_utf8_lossy(&chunk_data));
+            // Return error for invalid UTF-8 instead of silently replacing
+            let chunk_str = std::str::from_utf8(&chunk_data).map_err(|e| {
+                MultipartError::ParseError(format!(
+                    "Invalid UTF-8 in form field data: {}",
+                    e
+                ))
+            })?;
+            value.push_str(chunk_str);
         }
 
         Ok(value)
     }
 
     pub async fn save_file(file_input: &FileInput, path: impl AsRef<Path>) -> MultipartResult<()> {
-        let mut file = File::create(path).await?;
+        match &file_input.storage_mode {
+            FileStorageMode::InMemory => {
+                let mut file = File::create(path).await?;
 
-        // Write all bytes in a single batch
-        for byte in &file_input.bytes {
-            file.write_all(byte).await?;
+                // Write all bytes in a single batch
+                for byte in &file_input.bytes {
+                    file.write_all(byte).await?;
+                }
+
+                file.flush().await?;
+                Ok(())
+            }
+            FileStorageMode::OnDisk(temp_path) => {
+                // Copy the file from temp location to destination
+                tokio::fs::copy(temp_path, path).await?;
+                Ok(())
+            }
         }
-
-        file.flush().await?;
-        Ok(())
     }
 
     /// Get a parsed value of the specified type from a form field

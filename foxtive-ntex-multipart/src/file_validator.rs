@@ -41,10 +41,19 @@ pub struct FileRules {
     /// Max file size in bytes
     pub max_size: Option<usize>,
 
-    /// Allowed file extensions
+    /// Allowed file extensions (should be lowercase for consistent matching)
     pub allowed_extensions: Option<Vec<String>>,
 
-    /// Allowed content types
+    /// Allowed content types (should be lowercase for consistent matching)
+    /// 
+    /// # Security Note
+    /// 
+    /// Content-Type validation relies on the client-provided header, which can be
+    /// easily spoofed. For production systems handling sensitive file uploads, consider
+    /// implementing additional validation such as:
+    /// - Magic byte checking (file signature validation)
+    /// - File content inspection
+    /// - Integration with antivirus scanning
     pub allowed_content_types: Option<Vec<String>>,
 
     /// Min number of files, this only works when validating through `Multipart` struct
@@ -59,10 +68,9 @@ impl Validator {
         Default::default()
     }
 
-    pub fn add_rule(&mut self, field: &str, rules: FileRules) -> Self {
-        let mut validator = self.clone();
-        validator.rules.insert(field.to_string(), rules);
-        validator
+    pub fn add_rule(mut self, field: &str, rules: FileRules) -> Self {
+        self.rules.insert(field.to_string(), rules);
+        self
     }
 
     pub fn validate(&self, files: &HashMap<String, Vec<FileInput>>) -> MultipartResult<()> {
@@ -171,7 +179,9 @@ impl Validator {
         // Validate file extension
         if let Some(allowed_extensions) = &rule.allowed_extensions {
             if let Some(extension) = &file.extension {
-                if !allowed_extensions.contains(&extension.to_lowercase()) {
+                // Normalize both sides to lowercase for consistent comparison
+                let ext_lower = extension.to_lowercase();
+                if !allowed_extensions.iter().any(|e| e.to_lowercase() == ext_lower) {
                     return Err(InputError {
                         name: field_name.to_string(),
                         error: ErrorMessage::InvalidFileExtension(

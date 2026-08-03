@@ -6,41 +6,41 @@
 use uuid::Uuid;
 
 fn main() {
-    println!("🎯 UUID Support Example");
-    println!("=======================");
+    println!("UUID Support Example");
+    println!("====================");
 
     // Example UUIDs for demonstration
     let valid_uuid_str = "550e8400-e29b-41d4-a716-446655440000";
     let invalid_uuid_str = "not-a-valid-uuid";
 
-    println!("\n📋 UUID Parsing Examples:");
+    println!("\nUUID Parsing Examples:");
 
     // Example 1: Direct UUID parsing using FromStr
-    println!("\n🔍 Example 1: Direct UUID Parsing");
+    println!("\nExample 1: Direct UUID Parsing");
     match valid_uuid_str.parse::<Uuid>() {
         Ok(uuid) => {
-            println!("  ✅ Successfully parsed UUID: {uuid}");
+            println!("  Successfully parsed UUID: {uuid}");
             println!("     Hyphenated: {}", uuid.hyphenated());
             println!("     Simple: {}", uuid.simple());
             println!("     Version: {:?}", uuid.get_version());
             println!("     Variant: {:?}", uuid.get_variant());
         }
-        Err(e) => println!("  ❌ Error parsing UUID: {e}"),
+        Err(e) => println!("  Error parsing UUID: {e}"),
     }
 
     // Example 2: Error handling for invalid UUID
-    println!("\n🔍 Example 2: Error Handling for Invalid UUID");
+    println!("\nExample 2: Error Handling for Invalid UUID");
     match invalid_uuid_str.parse::<Uuid>() {
         Ok(uuid) => {
-            println!("  ❌ Unexpectedly parsed invalid UUID: {uuid}");
+            println!("  Unexpectedly parsed invalid UUID: {uuid}");
         }
         Err(e) => {
-            println!("  ✅ Expected error for invalid UUID: {e}");
+            println!("  Expected error for invalid UUID: {e}");
         }
     }
 
     // Example 3: UUID generation and formatting
-    println!("\n🔍 Example 3: UUID Generation and Formatting");
+    println!("\nExample 3: UUID Generation and Formatting");
     let generated_uuid = Uuid::new_v4();
     println!("  Generated UUID: {generated_uuid}");
     println!("  Formats:");
@@ -50,7 +50,7 @@ fn main() {
     println!("    Bytes:      {:?}", generated_uuid.as_bytes());
 
     // Example 4: Real-world usage scenario
-    println!("\n🔍 Example 4: Real-world Usage Scenario");
+    println!("\nExample 4: Real-world Usage Scenario");
     println!("  In a typical web application using multipart forms:");
 
     // Simulate parsing UUIDs from form data
@@ -72,14 +72,14 @@ fn main() {
     println!("    session_id: {},", user_registration.session_id);
     println!("  }}");
 
-    println!("\n✅ UUID support example completed successfully!");
-    println!("\n💡 Key Points:");
+    println!("\nUUID support example completed successfully!");
+    println!("\nKey Points:");
     println!("  • UUID support is enabled with the 'uuid' feature flag");
     println!("  • UUIDs work with all multipart parsing methods: post(), post_or(), post_opt()");
     println!("  • Option<Uuid> provides optional UUID parsing");
     println!("  • Invalid UUIDs produce descriptive error messages");
     println!("  • All UUID formats and methods are supported");
-    println!("\n📝 Usage in multipart forms:");
+    println!("\nUsage in multipart forms:");
     println!("  let user_id: Uuid = multipart.post(\"user_id\")?;");
     println!("  let optional_id: Option<Uuid> = multipart.post(\"optional_id\")?;");
     println!("  let default_id = multipart.post_or(\"missing_id\", Uuid::new_v4());");

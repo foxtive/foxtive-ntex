@@ -1,11 +1,10 @@
 use crate::contracts::ResponseCodeContract;
 use crate::enums::ResponseCode;
 use crate::error::HttpError;
-use crate::http::responder::Responder;
 use crate::http::response::ext::{ResponderExt, ResultResponseExt};
 use crate::http::{HttpResult, IntoAppResult};
 use foxtive::prelude::{AppMessage, AppResult};
-use foxtive::{Error, internal_server_error};
+use foxtive::internal_server_error;
 use ntex::http::error::BlockingError;
 use ntex::web::HttpResponse;
 use serde::Serialize;
@@ -33,7 +32,7 @@ where
     fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
         match self {
             Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
-            Err(err) => Err(HttpError::AppError(err)),
+            Err(err) => Err(HttpError::AppMessage(err)),
         }
     }
 }
@@ -43,7 +42,7 @@ where
     T: Serialize + Sized,
 {
     fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
-        <Result<T, foxtive::Error> as ResultResponseExt>::send_result_msg(
+        <AppResult<T> as ResultResponseExt>::send_result_msg(
             self.into_app_result(),
             code,
             msg,
@@ -51,7 +50,7 @@ where
     }
 
     fn respond_msg(self, msg: &str) -> HttpResult {
-        <Result<T, foxtive::Error> as ResultResponseExt>::send_result_msg(
+        <AppResult<T> as ResultResponseExt>::send_result_msg(
             self.into_app_result(),
             ResponseCode::Ok,
             msg,
@@ -59,7 +58,7 @@ where
     }
 
     fn respond(self) -> HttpResult {
-        <Result<T, foxtive::Error> as ResultResponseExt>::send_result(
+        <AppResult<T> as ResultResponseExt>::send_result(
             self.into_app_result(),
             ResponseCode::Ok,
         )
@@ -72,39 +71,8 @@ where
     fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
         match self {
             Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
-            Err(err) => Err(HttpError::AppError(match err {
-                BlockingError::Error(msg) => msg.into_anyhow(),
-                BlockingError::Canceled => internal_server_error!("Internal Server Error"),
-            })),
-        }
-    }
-}
-
-impl<T> ResponderExt for Result<T, BlockingError<Error>>
-where
-    T: Serialize + Sized,
-{
-    fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
-        Ok(Responder::send_msg(self?, code, msg))
-    }
-
-    fn respond_msg(self, msg: &str) -> HttpResult {
-        Ok(Responder::send_msg(self?, ResponseCode::Ok, msg))
-    }
-
-    fn respond(self) -> HttpResult {
-        Ok(Responder::send(self?, ResponseCode::Ok))
-    }
-
-    fn respond_undecorated(self) -> HttpResult {
-        self.respond_undecorated_code(ResponseCode::Ok)
-    }
-
-    fn respond_undecorated_code(self, code: impl ResponseCodeContract) -> HttpResult {
-        match self {
-            Ok(data) => Ok(HttpResponse::build(code.status()).json(&data)),
-            Err(err) => Err(HttpError::AppError(match err {
-                BlockingError::Error(err) => err,
+            Err(err) => Err(HttpError::AppMessage(match err {
+                BlockingError::Error(msg) => msg,
                 BlockingError::Canceled => internal_server_error!("Internal Server Error"),
             })),
         }
@@ -244,89 +212,5 @@ mod tests {
                 .status_code(),
             StatusCode::INTERNAL_SERVER_ERROR
         );
-    }
-
-    #[test]
-    fn test_blocking_error_respond_undecorated() {
-        let data = json!({"key": "value"});
-        let result: Result<_, BlockingError<Error>> = Ok(data.clone());
-
-        let response = result.respond_undecorated();
-        match response {
-            Ok(http_response) => {
-                assert_eq!(http_response.status(), StatusCode::OK);
-            }
-            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
-        }
-    }
-
-    #[test]
-    fn test_blocking_error_respond_undecorated_code() {
-        let data = json!({"key": "value"});
-        let result: Result<_, BlockingError<Error>> = Ok(data.clone());
-
-        let response = result.respond_undecorated_code(ResponseCode::NoContent);
-        match response {
-            Ok(http_response) => {
-                assert_eq!(http_response.status(), StatusCode::NO_CONTENT);
-            }
-            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
-        }
-    }
-
-    #[test]
-    fn test_blocking_error_respond_undecorated_error() {
-        let error = BlockingError::Error(invalid!("foxtive error"));
-        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
-
-        let response = result.respond_undecorated();
-        match response {
-            Ok(_) => panic!("Expected Err, but got Ok"),
-            Err(e) => {
-                assert_eq!(e.status_code(), StatusCode::BAD_REQUEST);
-            }
-        }
-    }
-
-    #[test]
-    fn test_blocking_error_respond_undecorated_code_error() {
-        let error = BlockingError::Error(invalid!("foxtive error"));
-        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
-
-        let response = result.respond_undecorated_code(ResponseCode::Created);
-        match response {
-            Ok(_) => panic!("Expected Err, but got Ok"),
-            Err(e) => {
-                assert_eq!(e.status_code(), StatusCode::BAD_REQUEST);
-            }
-        }
-    }
-
-    #[test]
-    fn test_blocking_error_respond_undecorated_canceled() {
-        let error = BlockingError::Canceled;
-        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
-
-        let response = result.respond_undecorated();
-        match response {
-            Ok(_) => panic!("Expected Err, but got Ok"),
-            Err(e) => {
-                assert_eq!(e.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        }
-    }
-
-    #[test]
-    fn test_blocking_error_respond_undecorated_code_canceled() {
-        let error = BlockingError::Canceled;
-        let result: Result<JsonEmpty, BlockingError<Error>> = Err(error);
-
-        let response = result.respond_undecorated_code(ResponseCode::Accepted);
-        match response {
-            Ok(_) => panic!("Expected Err, but got Ok"),
-            Err(e) => {
-                assert_eq!(e.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        }
     }
 }

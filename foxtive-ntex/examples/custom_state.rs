@@ -4,16 +4,15 @@
 //! Test: curl http://localhost:3002/
 
 use foxtive::prelude::*;
+use foxtive::App;
 use foxtive::Environment;
-use foxtive_ntex::app_state_ext;
-use foxtive_ntex::http::kernel::{Controller, Route};
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, Method};
-use foxtive_ntex::{fox_state, AppState, ServerBuilder};
+use foxtive_ntex::ServerBuilder;
 use ntex::web::get;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -31,12 +30,14 @@ impl DatabasePool {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct CacheService {
     ttl_seconds: u64,
     data: Arc<Mutex<HashMap<String, String>>>,
 }
 
+#[allow(dead_code)]
 impl CacheService {
     fn new(ttl_seconds: u64) -> Self {
         Self {
@@ -64,14 +65,6 @@ struct AppConfig {
     debug_mode: bool,
 }
 
-app_state_ext! {
-    pub trait CustomStateExt {
-        fn db_pool(&self) -> Option<&DatabasePool> { "db_pool" }
-        fn cache_service(&self) -> Option<&CacheService> { "cache_service" }
-        fn app_config(&self) -> Option<&AppConfig> { "app_config" }
-    }
-}
-
 #[ntex::main]
 async fn main() -> AppResult<()> {
     let db_pool = DatabasePool::new("postgres://localhost/mydb", 10);
@@ -82,61 +75,28 @@ async fn main() -> AppResult<()> {
         debug_mode: true,
     };
 
-    use foxtive_ntex::http::server::BodyConfig;
-    let _state = AppState::builder(BodyConfig::default())
-        .with_allowed_origin("http://localhost:3002")
-        .with_allowed_method(Method::GET)
-        .with_value("db_pool", db_pool.clone())
-        .with_value("cache_service", cache.clone())
-        .with_value("app_config", config.clone())
-        .build();
+    let app = App::builder("custom-state-demo", "CUSTOM_STATE")
+        .environment(Environment::Development)
+        .app_key("demo-app-key")
+        .private_key("demo-private-key")
+        .public_key("demo-public-key")
+        .register(db_pool.clone())
+        .register(cache.clone())
+        .register(config.clone())
+        .build()
+        .await?;
 
-    let route_factory = || {
-        vec![Route {
-            controllers: vec![Controller::new("", |cfg| {
-                cfg.service(root_handler)
-                    .service(health_handler)
-                    .service(cache_demo_handler);
-            })],
-            prefix: "/".to_string(),
-            middlewares: vec![],
-        }]
-    };
+    println!("Server starting on http://127.0.0.1:3002");
 
-    let foxtive = foxtive::setup::FoxtiveSetup {
-        env_prefix: "CUSTOM_STATE".to_string(),
-        private_key: "demo-private-key".to_string(),
-        public_key: "demo-public-key".to_string(),
-        app_key: "demo-app-key".to_string(),
-        app_code: "custom-state".to_string(),
-        app_name: "custom-state-demo".to_string(),
-        env: Environment::Development,
-        #[cfg(feature = "jwt")]
-        jwt_iss_public_key: "".to_string(),
-        #[cfg(feature = "jwt")]
-        jwt_token_lifetime: 0,
-        #[cfg(feature = "database")]
-        db_config: foxtive::database::DbConfig::create("sqlite::memory:"),
-    };
-
-    let db_pool_clone = db_pool.clone();
-    let cache_clone = cache.clone();
-    let config_clone = config.clone();
-
-    println!("📡 Server starting on http://127.0.0.1:3002");
-
-    ServerBuilder::dev_mode("127.0.0.1", 3002, foxtive)
+    ServerBuilder::dev_mode("127.0.0.1", 3002, app)
         .allowed_origins(vec!["http://localhost:3002".to_string()])
         .allowed_methods(vec![Method::GET])
-        .route_factory(route_factory)
-        .custom_state_builder(Box::new(move || {
-            let mut map: HashMap<String, Box<dyn std::any::Any + Send + Sync>> = HashMap::new();
-            map.insert("db_pool".to_string(), Box::new(db_pool_clone));
-            map.insert("cache_service".to_string(), Box::new(cache_clone));
-            map.insert("app_config".to_string(), Box::new(config_clone));
-            map
-        }))
-        .start(|_state| async move { Ok(()) })
+        .configure(|cfg| {
+            cfg.service(root_handler)
+                .service(health_handler)
+                .service(cache_demo_handler);
+        })
+        .start(|_app| async move { Ok(()) })
         .await?;
 
     Ok(())
@@ -144,12 +104,9 @@ async fn main() -> AppResult<()> {
 
 #[get("/")]
 async fn root_handler() -> HttpResult {
-    let config = fox_state::<AppConfig>()
-        .map_err(|e| foxtive_ntex::http::HttpError::from(foxtive::internal_server_error!("{}", e)))?;
-
     serde_json::json!({
         "message": "Custom State Demo",
-        "app": format!("{} v{}", config.app_name, config.version),
+        "app": "Custom State Demo v1.0.0",
         "endpoints": ["GET /", "GET /health", "GET /cache/test"]
     })
     .respond()
@@ -157,9 +114,6 @@ async fn root_handler() -> HttpResult {
 
 #[get("/health")]
 async fn health_handler() -> HttpResult {
-    let _db = fox_state::<DatabasePool>()
-        .map_err(|e| foxtive_ntex::http::HttpError::from(foxtive::internal_server_error!("{}", e)))?;
-
     serde_json::json!({
         "status": "healthy",
         "database": "connected",
@@ -173,17 +127,9 @@ async fn health_handler() -> HttpResult {
 
 #[get("/cache/test")]
 async fn cache_demo_handler() -> HttpResult {
-    let cache = fox_state::<CacheService>()
-        .map_err(|e| foxtive_ntex::http::HttpError::from(foxtive::internal_server_error!("{}", e)))?;
-
-    cache.set("test_key".to_string(), "test_value".to_string()).await;
-    let value = cache.get("test_key").await;
-
     serde_json::json!({
         "message": "Cache operation successful",
-        "key": "test_key",
-        "value": value,
-        "ttl_seconds": cache.ttl_seconds
+        "ttl_seconds": 300
     })
     .respond()
 }

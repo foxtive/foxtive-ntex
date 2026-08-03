@@ -1,26 +1,24 @@
-use crate::FOXTIVE_NTEX;
-use crate::setup::state::FoxtiveNtexState;
-use foxtive::prelude::AppStateExt;
-use foxtive::{FOXTIVE, FoxtiveState};
-use std::sync::OnceLock;
+use crate::setup::state::AppState;
+use foxtive::App;
+use ntex::web::HttpRequest;
+use std::sync::Arc;
 
-/// Get a reference to custom state by type.
-pub fn fox_state<T: Send + Sync + 'static>() -> Result<&'static T, String> {
-    let state = FOXTIVE_NTEX.get().ok_or("FoxtiveNtexState not initialized")?;
-    
-    state.iter_custom_state()
-        .find_map(|(_key, value)| value.downcast_ref::<T>())
-        .ok_or_else(|| format!("Custom state of type {} not found", std::any::type_name::<T>()))
+/// Get a reference to the foxtive `App` from an ntex request.
+///
+/// Requires that `Arc<App>` was registered as ntex state via
+/// `.state(app.clone())`.
+pub fn app_from_req(req: &HttpRequest) -> Option<&Arc<App>> {
+    req.app_state::<Arc<App>>()
 }
 
-pub trait FoxtiveNtexExt {
-    fn app(&self) -> &FoxtiveNtexState {
-        FOXTIVE_NTEX.get().unwrap()
-    }
-
-    fn foxtive(&self) -> &FoxtiveState {
-        FOXTIVE.app()
-    }
+/// Get a reference to the ntex `AppState` from an ntex request.
+pub fn app_state_from_req(req: &HttpRequest) -> Option<&AppState> {
+    req.app_state::<AppState>()
 }
 
-impl FoxtiveNtexExt for OnceLock<FoxtiveNtexState> {}
+/// Get a reference to a custom service registered in the foxtive `App` DI container.
+///
+/// Returns `Arc<T>` — a cheap clonable handle to the service.
+pub fn fox_service<T: Send + Sync + 'static>(req: &HttpRequest) -> Option<Arc<T>> {
+    app_from_req(req).and_then(|app| app.get::<T>())
+}

@@ -1,9 +1,14 @@
 use crate::http::middlewares::{Middleware, MiddlewareFlow};
-use crate::http::response::anyhow::ResponseError;
+use crate::http::response::error::ResponseError;
+use foxtive::metrics::InfraEvent;
+use foxtive::App;
 use ntex::service::{Middleware as ServiceMiddleware, Service, ServiceCtx};
 use ntex::web;
 use ntex::web::{Error, WebRequest, WebResponse};
+use std::borrow::Cow;
 use std::rc::Rc;
+use std::sync::Arc;
+use std::time::Instant;
 use tracing::{debug, error, info};
 
 #[derive(Clone)]
@@ -55,6 +60,7 @@ where
         request: web::WebRequest<Err>,
         ctx: ServiceCtx<'_, Self>,
     ) -> Result<Self::Response, Self::Error> {
+        let start = Instant::now();
         let (mut req, payload) = request.into_parts();
         info!("{} {}", req.method(), req.path());
 
@@ -95,6 +101,19 @@ where
                     }
                 }
             }
+        }
+
+        // Emit HTTP request metrics
+        let duration = start.elapsed();
+        let success = response.status().is_success() || response.status().is_redirection();
+        if let Some(app) = response.request().app_state::<Arc<App>>()
+            && let Some(metrics) = app.metrics()
+        {
+            metrics.record(&InfraEvent::OperationCompleted {
+                operation: Cow::Borrowed("http_request"),
+                duration,
+                success,
+            });
         }
 
         Ok(response)

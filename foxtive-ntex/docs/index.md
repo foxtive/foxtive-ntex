@@ -1,6 +1,7 @@
-# Foxtive Ntex
-Foxtive-Ntex is a micro-framework built upon 
-[Foxtive](https://github.com/foxtive/foxtive) & [Rust's Ntex](https://ntex.rs).
+# Foxtive-Ntex
 
-### Table Of Content
+A web framework built on [Foxtive](https://github.com/foxtive/foxtive) and [ntex](https://ntex.rs). DI-first, no global state, built on top of ntex for speed.
+
+### Table of Contents
 - [Installation](installation.md)
+- [README](../README.md) — full guide with examples

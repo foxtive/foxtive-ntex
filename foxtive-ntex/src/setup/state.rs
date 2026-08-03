@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
-/// Type-safe container for custom application state
+/// Type-safe container for ntex-specific application state
 #[derive(Clone)]
 pub struct AppState {
     /// Built-in CORS configuration
@@ -87,9 +87,6 @@ impl Debug for AppState {
     }
 }
 
-// Keep FoxtiveNtexState as an alias for backward compatibility
-pub type FoxtiveNtexState = AppState;
-
 /// Builder for constructing AppState with custom values
 pub struct AppStateBuilder {
     allowed_origins: Vec<String>,
@@ -145,11 +142,6 @@ impl AppStateBuilder {
     pub fn with_body_config(mut self, config: BodyConfig) -> Self {
         self.body_config = config;
         self
-    }
-
-    #[deprecated(since = "0.31.0", note = "Use with_body_config instead")]
-    pub fn with_json_config(self, config: BodyConfig) -> Self {
-        self.with_body_config(config)
     }
 
     pub fn build(self) -> AppState {

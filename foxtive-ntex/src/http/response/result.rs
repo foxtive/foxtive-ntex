@@ -6,18 +6,18 @@ use crate::http::response::ext::{OptionResultResponseExt, ResultResponseExt};
 use foxtive::prelude::{AppMessage, AppResult};
 use serde::Serialize;
 
-impl ResultResponseExt for Result<AppMessage, AppMessage> {
-    fn send_result<C: ResponseCodeContract>(self, c: C) -> HttpResult {
+impl<T: Serialize> ResultResponseExt for AppResult<T> {
+    fn send_result<C: ResponseCodeContract>(self, code: C) -> HttpResult {
         match self {
-            Ok(data) => Ok(Responder::message(&data.message(), c)),
+            Ok(data) => Ok(Responder::send(data, code)),
             Err(err) => Err(HttpError::AppMessage(err)),
         }
     }
 
-    fn send_result_msg<C: ResponseCodeContract>(self, c: C, _: &str) -> HttpResult {
+    fn send_result_msg<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult {
         match self {
-            Ok(data) => Ok(Responder::message(&data.message(), c)),
-            Err(err) => Err(err.into()),
+            Ok(data) => Ok(Responder::send_msg(data, code, msg)),
+            Err(err) => Err(HttpError::AppMessage(err)),
         }
     }
 }
@@ -26,10 +26,7 @@ impl<T: Serialize> OptionResultResponseExt<T> for AppResult<T> {
     fn is_empty(&self) -> bool {
         match self {
             Ok(_) => false,
-            Err(e) => match e.downcast_ref::<AppMessage>() {
-                Some(message) => matches!(message, AppMessage::NotFound(..)),
-                None => false,
-            },
+            Err(e) => matches!(e, AppMessage::NotFound(..)),
         }
     }
 
@@ -43,26 +40,10 @@ impl<T: Serialize> OptionResultResponseExt<T> for AppResult<T> {
 
     fn send_response<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult {
         Ok(Responder::send_msg(
-            self.map_err(HttpError::AppError)?,
+            self.map_err(HttpError::AppMessage)?,
             code,
             msg,
         ))
-    }
-}
-
-impl<T: Serialize> ResultResponseExt for AppResult<T> {
-    fn send_result<C: ResponseCodeContract>(self, code: C) -> HttpResult {
-        match self {
-            Ok(data) => Ok(Responder::send(data, code)),
-            Err(err) => Err(HttpError::AppError(err)),
-        }
-    }
-
-    fn send_result_msg<C: ResponseCodeContract>(self, code: C, msg: &str) -> HttpResult {
-        match self {
-            Ok(data) => Ok(Responder::send_msg(data, code, msg)),
-            Err(err) => Err(HttpError::AppError(err)),
-        }
     }
 }
 
@@ -76,22 +57,9 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn test_result_response_send_result_ok() {
-        let result: Result<AppMessage, AppMessage> = Ok(AppMessage::not_found("".to_string()));
-
-        let response = result.send_result_msg(ResponseCode::NotFound, "nfd");
-        match response {
-            Ok(responder) => {
-                assert_eq!(responder.status(), StatusCode::NOT_FOUND);
-            }
-            Err(e) => panic!("Expected Ok, but got Err: {e:?}"),
-        }
-    }
-
-    #[test]
     fn test_result_response_send_result_err() {
         let err = AppMessage::not_found("app".to_string());
-        let result: Result<AppMessage, AppMessage> = Err(err);
+        let result: AppResult<serde_json::Value> = Err(err);
 
         let response = result.send_result_msg(ResponseCode::NotFound, "fail");
         match response {
@@ -105,14 +73,14 @@ mod tests {
 
     #[test]
     fn test_option_result_response_is_empty() {
-        let result: AppResult<()> = AppMessage::not_found("".to_string()).into_result(); // Assuming this represents an entity not found error
+        let result: AppResult<()> = AppMessage::not_found("".to_string()).into_result();
 
         assert!(result.is_empty());
     }
 
     #[test]
     fn test_option_result_response_is_error_or_empty() {
-        let result_empty: AppResult<()> = AppMessage::not_found("".to_string()).into_result(); // Assuming this represents an entity not found error
+        let result_empty: AppResult<()> = AppMessage::not_found("".to_string()).into_result();
         let result_error: AppResult<()> = AppMessage::not_found("".to_string()).into_result();
         let result_ok: AppResult<()> = Ok(());
 

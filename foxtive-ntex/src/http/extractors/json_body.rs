@@ -1,5 +1,5 @@
 use crate::error::HttpError;
-use crate::{FOXTIVE_NTEX, FoxtiveNtexExt};
+use crate::http::server::BodyConfig;
 use foxtive::prelude::AppMessage;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
@@ -33,10 +33,13 @@ impl<T: DeserializeOwned, Err> FromRequest<Err> for JsonBody<T> {
     type Error = HttpError;
 
     async fn from_request(
-        _req: &HttpRequest,
+        req: &HttpRequest,
         payload: &mut Payload,
     ) -> Result<JsonBody<T>, Self::Error> {
-        let max_size = FOXTIVE_NTEX.app().body_config.json_limit;
+        let max_size = req
+            .app_state::<BodyConfig>()
+            .map(|c| c.json_limit)
+            .unwrap_or(262_144);
         let mut bytes = BytesMut::new();
         let mut total_size = 0;
 

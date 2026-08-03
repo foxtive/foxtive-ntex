@@ -24,16 +24,7 @@ impl AppMessageExt for AppResult<AppMessage> {
     fn respond(self) -> HttpResult {
         match self {
             Ok(msg) => msg.respond(),
-            Err(err) => Err(HttpError::AppError(err)),
-        }
-    }
-}
-
-impl AppMessageExt for Result<AppMessage, AppMessage> {
-    fn respond(self) -> HttpResult {
-        match self {
-            Ok(msg) => msg.respond(),
-            Err(err) => err.respond(),
+            Err(err) => Err(HttpError::AppMessage(err)),
         }
     }
 }
@@ -52,25 +43,10 @@ impl AppMessageExt for Result<AppMessage, BlockingError<AppMessage>> {
     }
 }
 
-impl AppMessageExt for Result<AppMessage, BlockingError<foxtive::Error>> {
-    fn respond(self) -> HttpResult {
-        match self {
-            Ok(msg) => msg.respond(),
-            Err(err) => match err {
-                BlockingError::Error(err) => Err(HttpError::AppError(err)),
-                BlockingError::Canceled => {
-                    AppMessage::internal_server_error("Error").into_http_result()
-                }
-            },
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::http::response::ext::AppMessageExt;
-    use foxtive::prelude::AppMessage;
-    use foxtive::{Error, internal_server_error};
+    use foxtive::prelude::{AppMessage, AppResult};
     use ntex::http::StatusCode;
     use ntex::http::error::BlockingError;
     use ntex::web::WebResponseError;
@@ -91,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_app_message_result_respond() {
-        let msg: Result<AppMessage, Error> =
+        let msg: AppResult<AppMessage> =
             Ok(AppMessage::internal_server_error("Internal Server Error"));
         let result = msg.respond();
         assert!(result.is_err());
@@ -99,14 +75,15 @@ mod tests {
 
     #[test]
     fn test_app_message_result_error_respond() {
-        let msg = Err(AppMessage::internal_server_error("Error"));
+        let msg: AppResult<AppMessage> = Err(AppMessage::internal_server_error("Error"));
         let result = msg.respond();
         assert!(result.is_err());
     }
 
     #[test]
     fn test_app_message_result_blocking_error_respond() {
-        let msg = Err(BlockingError::Error(internal_server_error!("Error")));
+        let msg: Result<AppMessage, BlockingError<AppMessage>> =
+            Err(BlockingError::Error(AppMessage::internal_server_error("Error")));
         let result = msg.respond();
         assert!(result.is_err());
     }
@@ -125,12 +102,5 @@ mod tests {
             Err(BlockingError::Error(AppMessage::invalid("Hmm")));
         let status = msg.respond().unwrap_err().status_code();
         assert_eq!(status, StatusCode::BAD_REQUEST);
-    }
-
-    #[test]
-    fn test_app_message_result_blocking_error_canceled_respond_with_error() {
-        let msg: Result<AppMessage, BlockingError<Error>> = Err(BlockingError::Canceled);
-        let result = msg.respond();
-        assert!(result.is_err());
     }
 }
