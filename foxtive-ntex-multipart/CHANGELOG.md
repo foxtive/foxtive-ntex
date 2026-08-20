@@ -2,6 +2,10 @@
 
 ------
 
+### 1.0.1
+
+* chore: compatibility release for foxtive-ntex 1.1.0
+
 ### 1.0.0
 
 * bump: aligned with foxtive-ntex v1.0 (foxtive v1 / DI refactor)

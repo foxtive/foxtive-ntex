@@ -7,8 +7,9 @@ pub use config::{BodyConfig, ServerBuilder};
 pub use config::JsonConfig;
 
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger};
-use crate::setup::{NtexSetup, build_app_state};
-use foxtive::prelude::AppResult;
+use crate::http::shutdown::ShutdownSignal;
+use crate::setup::{CustomStateBuilder, NtexSetup, build_app_state};
+use foxtive::prelude::{AppMessage, AppResult};
 use foxtive::setup::load_environment_variables;
 use foxtive::setup::trace::Tracing;
 use foxtive::App;
@@ -42,7 +43,22 @@ where
 
     debug!("Creating ntex app state");
     let body_config = builder.body_config.clone().unwrap_or_default();
-    let custom_state_builder = builder.custom_state_builder;
+
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+    let (app_shutdown_tx, app_shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let user_custom_state_builder = builder.custom_state_builder;
+    let custom_state_builder: Option<CustomStateBuilder> = Some(Box::new(move || {
+        let mut state = user_custom_state_builder
+            .map(|b| b())
+            .unwrap_or_default();
+        state.insert(
+            "shutdown_signal".to_string(),
+            Box::new(ShutdownSignal::new(shutdown_tx)),
+        );
+        state
+    }));
+
     let app_state = build_app_state(NtexSetup {
         allowed_origins: builder.allowed_origins,
         allowed_methods: builder.allowed_methods,
@@ -59,6 +75,20 @@ where
 
     // Run foxtive startup hooks
     app.run_startup_hooks().await?;
+
+    {
+        let app_for_bridge = app.clone();
+        let bridge_tx = app_shutdown_tx;
+        ntex::rt::spawn(async move {
+            loop {
+                if app_for_bridge.is_shutting_down() {
+                    let _ = bridge_tx.send(());
+                    break;
+                }
+                ntex::time::sleep(ntex::time::Millis(50)).await;
+            }
+        });
+    }
 
     let route_factory = builder.route_factory;
     let configure_fn = builder.configure_fn;
@@ -124,37 +154,42 @@ where
     .bind((builder.host, builder.port))?
     .run();
 
-    // clone server handle
     let srv = server.clone();
 
-    // use provided shutdown signal or default
+    let srv_for_signal = srv.clone();
+    ntex::rt::spawn(async move {
+        tokio::select! {
+            _ = shutdown_rx => {
+                debug!("Programmatic shutdown signal received");
+            }
+            _ = app_shutdown_rx => {
+                debug!("app.shutdown() triggered server stop");
+            }
+        }
+        srv_for_signal.stop(true).await;
+    });
+
     let shutdown_signal = builder
         .shutdown_signal
         .unwrap_or_else(default_shutdown_signal);
 
-    // spawn shutdown listener
     ntex::rt::spawn(async move {
         shutdown_signal.await;
 
         debug!("Shutdown signal received");
-
-        // graceful stop
         srv.stop(true).await;
     });
 
-    // await server
-    server.await.map_err(|e| foxtive::prelude::AppMessage::Infrastructure {
+    server.await.map_err(|e| AppMessage::Infrastructure {
         message: "Server error".to_string(),
         source: Some(Box::new(e)),
     })?;
 
-    // AFTER server fully stops, run cleanup handler and foxtive shutdown hooks
     if let Some(on_shutdown) = builder.on_shutdown {
         debug!("Running shutdown handler");
         on_shutdown.await;
     }
 
-    // Run registered shutdown services (ShutdownRegistry)
     let mut registry = builder.shutdown_registry;
     if !registry.is_empty() {
         let timeout = builder.shutdown_config.map(|c| c.timeout);
@@ -162,7 +197,6 @@ where
         registry.shutdown_all(timeout).await;
     }
 
-    // Run foxtive shutdown hooks
     app.shutdown().await;
 
     Ok(())

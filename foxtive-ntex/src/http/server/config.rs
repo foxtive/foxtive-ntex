@@ -502,7 +502,7 @@ impl ServerBuilder {
     }
 
     /// Validate the server configuration before startup.
-    pub fn validate(&self) -> foxtive::results::AppResult<()> {
+    pub fn validate(&self) -> AppResult<()> {
         use foxtive::internal_server_error;
 
         // Critical validations

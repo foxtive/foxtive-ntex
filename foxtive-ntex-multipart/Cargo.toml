@@ -1,6 +1,6 @@
 [package]
 name = "foxtive-ntex-multipart"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 license = "MIT"
 description = "Multipart form data parser for ntex"
@@ -12,13 +12,13 @@ default = []
 uuid = ["dep:uuid"]
 
 [dependencies]
-futures = { version = "0.3.33", default-features = false }
+futures = { version = "0.3.34", default-features = false }
 ntex-multipart = "3.2.0"
 ntex = { workspace = true }
 foxtive = { workspace = true }
 thiserror = { workspace = true }
 serde_json = "1.0.151"
-uuid = { version = "1.24.0", default-features = false, features = ["v4"], optional = true }
+uuid = { version = "1.24.1", default-features = false, features = ["v4"], optional = true }
 tokio = { version = "1.53.1", default-features = false, features = [
     "fs",
     "io-util",
@@ -26,7 +26,7 @@ tokio = { version = "1.53.1", default-features = false, features = [
 
 [dev-dependencies]
 tokio = { version = "1.53.1", features = ["test-util", "macros"] }
-uuid = { version = "1.24.0", default-features = false, features = ["v4"] }
+uuid = { version = "1.24.1", default-features = false, features = ["v4"] }
 
 [[example]]
 name = "uuid"

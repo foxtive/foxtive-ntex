@@ -2,6 +2,20 @@
 //!
 //! This module provides a registry-based system for managing service shutdown
 //! with timeout handling and priority-based cleanup ordering.
+//!
+//! # Programmatic Shutdown
+//!
+//! To stop the server from within a handler or background task, use the
+//! [`ShutdownSignal`] stored in the application state:
+//!
+//! ```rust,ignore
+//! async fn stop_handler(state: web::types::State<AppState>) -> HttpResponse {
+//!     if let Some(signal) = state.get::<ShutdownSignal>("shutdown_signal") {
+//!         signal.trigger();
+//!     }
+//!     HttpResponse::NoContent().finish()
+//! }
+//! ```
 
 use std::future::Future;
 use std::pin::Pin;
@@ -10,17 +24,8 @@ use tracing::{info, warn, error};
 
 /// A service that needs to perform cleanup during shutdown
 pub struct ShutdownService {
-    /// Name of the service (for logging)
     pub name: String,
-    
-    /// Priority for shutdown ordering (lower = shutdown first)
-    /// Typical priorities:
-    /// - 0-10: Critical infrastructure (databases, message queues)
-    /// - 11-50: Application services (caches, connection pools)
-    /// - 51-100: Auxiliary services (loggers, metrics)
     pub priority: u8,
-    
-    /// The cleanup function that will be called during shutdown
     cleanup: Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>,
 }
 
@@ -187,6 +192,48 @@ impl Default for ShutdownRegistry {
     }
 }
 
+/// Programmatic shutdown trigger for the ntex HTTP server.
+///
+/// Wraps a oneshot channel sender. When [`trigger()`](Self::trigger) is called,
+/// the server receives a stop command and begins graceful shutdown.
+///
+/// An instance is automatically registered in the application state
+/// under the key `"shutdown_signal"` during server startup.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// async fn stop_handler(state: ntex::web::types::State<AppState>) -> ntex::web::HttpResponse {
+///     if let Some(signal) = state.get::<ShutdownSignal>("shutdown_signal") {
+///         signal.trigger().await;
+///     }
+///     ntex::web::HttpResponse::NoContent().finish()
+/// }
+/// ```
+pub struct ShutdownSignal {
+    tx: tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+}
+
+impl ShutdownSignal {
+    /// Create a new shutdown signal wrapping a oneshot sender.
+    pub fn new(tx: tokio::sync::oneshot::Sender<()>) -> Self {
+        Self {
+            tx: tokio::sync::Mutex::new(Some(tx)),
+        }
+    }
+
+    /// Trigger a graceful server shutdown.
+    /// Idempotent: returns `true` on the first call, `false` on subsequent calls.
+    pub async fn trigger(&self) -> bool {
+        let mut guard = self.tx.lock().await;
+        if let Some(tx) = guard.take() {
+            tx.send(()).is_ok()
+        } else {
+            false
+        }
+    }
+}
+
 /// Configuration for shutdown behavior
 #[derive(Debug, Clone)]
 pub struct ShutdownConfig {
@@ -249,8 +296,6 @@ mod tests {
         let mut registry = ShutdownRegistry::new();
         assert_eq!(registry.len(), 0);
         assert!(registry.is_empty());
-        
-        // Should complete immediately with no services
         registry.shutdown_all(None).await;
     }
 
@@ -258,7 +303,7 @@ mod tests {
     async fn test_shutdown_registry_single_service() {
         let executed = Arc::new(Mutex::new(false));
         let executed_clone = executed.clone();
-        
+
         let mut registry = ShutdownRegistry::new();
         registry.register("test_service", 1, move || {
             let exec = executed_clone.clone();
@@ -267,11 +312,10 @@ mod tests {
                 *flag = true;
             }
         });
-        
+
         assert_eq!(registry.len(), 1);
-        
         registry.shutdown_all(None).await;
-        
+
         let flag = executed.lock().await;
         assert!(*flag);
     }
@@ -279,10 +323,9 @@ mod tests {
     #[tokio::test]
     async fn test_shutdown_priority_ordering() {
         let order = Arc::new(Mutex::new(Vec::new()));
-        
+
         let mut registry = ShutdownRegistry::new();
-        
-        // Register services with different priorities
+
         let order1 = order.clone();
         registry.register("low_priority", 10, move || {
             let ord = order1.clone();
@@ -290,7 +333,7 @@ mod tests {
                 ord.lock().await.push("low_priority");
             }
         });
-        
+
         let order2 = order.clone();
         registry.register("high_priority", 1, move || {
             let ord = order2.clone();
@@ -298,7 +341,7 @@ mod tests {
                 ord.lock().await.push("high_priority");
             }
         });
-        
+
         let order3 = order.clone();
         registry.register("medium_priority", 5, move || {
             let ord = order3.clone();
@@ -306,30 +349,23 @@ mod tests {
                 ord.lock().await.push("medium_priority");
             }
         });
-        
+
         registry.shutdown_all(None).await;
-        
+
         let final_order = order.lock().await;
-        // Should shutdown in priority order: 1, 5, 10
         assert_eq!(*final_order, vec!["high_priority", "medium_priority", "low_priority"]);
     }
 
     #[tokio::test]
     async fn test_shutdown_timeout() {
         let mut registry = ShutdownRegistry::new();
-        
-        // Register a service that takes longer than the timeout
         registry.register("slow_service", 1, || async {
             tokio::time::sleep(Duration::from_secs(10)).await;
         });
-        
-        // Use a short timeout
+
         let start = tokio::time::Instant::now();
         registry.shutdown_all(Some(Duration::from_secs(1))).await;
-        let elapsed = start.elapsed();
-        
-        // Should timeout after approximately 1 second, not 10
-        assert!(elapsed < Duration::from_secs(3));
+        assert!(start.elapsed() < Duration::from_secs(3));
     }
 
     #[tokio::test]
@@ -338,11 +374,11 @@ mod tests {
         assert_eq!(config.timeout, Duration::from_secs(30));
         assert_eq!(config.service_timeout, Duration::from_secs(15));
         assert!(config.force_kill);
-        
+
         let config2 = ShutdownConfig::with_timeouts(60, 10);
         assert_eq!(config2.timeout, Duration::from_secs(60));
         assert_eq!(config2.service_timeout, Duration::from_secs(10));
-        
+
         let config3 = ShutdownConfig::new(20).force_kill(false);
         assert!(!config3.force_kill);
     }
@@ -350,10 +386,9 @@ mod tests {
     #[tokio::test]
     async fn test_multiple_services_with_timeout() {
         let executed = Arc::new(Mutex::new(Vec::new()));
-        
-        let mut registry = ShutdownRegistry::with_timeout(2); // 2 second timeout
-        
-        // Fast service
+
+        let mut registry = ShutdownRegistry::with_timeout(2);
+
         let exec1 = executed.clone();
         registry.register("fast", 1, move || {
             let exec = exec1.clone();
@@ -361,8 +396,7 @@ mod tests {
                 exec.lock().await.push("fast");
             }
         });
-        
-        // Slow service (will timeout)
+
         let exec2 = executed.clone();
         registry.register("slow", 2, move || {
             let exec = exec2.clone();
@@ -371,8 +405,7 @@ mod tests {
                 exec.lock().await.push("slow");
             }
         });
-        
-        // Another fast service
+
         let exec3 = executed.clone();
         registry.register("another_fast", 3, move || {
             let exec = exec3.clone();
@@ -380,13 +413,112 @@ mod tests {
                 exec.lock().await.push("another_fast");
             }
         });
-        
+
         registry.shutdown_all(None).await;
-        
+
         let final_executed = executed.lock().await;
-        // Fast services should execute, slow one should timeout
         assert_eq!(final_executed.len(), 2);
         assert_eq!(final_executed[0], "fast");
         assert_eq!(final_executed[1], "another_fast");
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_signal_trigger() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+        let signal = ShutdownSignal::new(tx);
+
+        assert!(signal.trigger().await);
+        assert!(rx.await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_signal_idempotent() {
+        let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
+        let signal = ShutdownSignal::new(tx);
+
+        assert!(signal.trigger().await);
+        assert!(!signal.trigger().await);
+        assert!(!signal.trigger().await);
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_signal_receiver_dropped() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+        let signal = ShutdownSignal::new(tx);
+
+        drop(rx);
+        assert!(!signal.trigger().await);
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_signal_concurrent_trigger() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+        let signal = Arc::new(ShutdownSignal::new(tx));
+
+        let signal1 = signal.clone();
+        let signal2 = signal.clone();
+
+        let handle1 = tokio::spawn(async move { signal1.trigger().await });
+        let handle2 = tokio::spawn(async move { signal2.trigger().await });
+
+        let result1 = handle1.await.unwrap();
+        let result2 = handle2.await.unwrap();
+
+        assert_ne!(result1, result2);
+        assert!(rx.await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_app_shutdown_bridge_pattern() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let shutting_down = Arc::new(AtomicBool::new(false));
+        let (bridge_tx, mut bridge_rx) = tokio::sync::oneshot::channel::<()>();
+
+        let flag = shutting_down.clone();
+        tokio::spawn(async move {
+            loop {
+                if flag.load(Ordering::SeqCst) {
+                    let _ = bridge_tx.send(());
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        });
+
+        assert!(bridge_rx.try_recv().is_err());
+
+        shutting_down.store(true, Ordering::SeqCst);
+
+        let result = tokio::time::timeout(
+            Duration::from_millis(100),
+            bridge_rx,
+        )
+        .await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_app_shutdown_bridge_idempotent() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let shutting_down = Arc::new(AtomicBool::new(false));
+        let (bridge_tx, bridge_rx) = tokio::sync::oneshot::channel::<()>();
+
+        let flag = shutting_down.clone();
+        tokio::spawn(async move {
+            loop {
+                if flag.load(Ordering::SeqCst) {
+                    let _ = bridge_tx.send(());
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        });
+
+        shutting_down.store(true, Ordering::SeqCst);
+        assert!(bridge_rx.await.is_ok());
     }
 }

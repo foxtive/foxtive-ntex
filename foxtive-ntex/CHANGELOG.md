@@ -2,6 +2,15 @@
 
 ------
 
+### 1.1.0
+
+* feat(shutdown): add `ShutdownSignal` for programmatic server shutdown (ntex mpsc pattern)
+* feat(shutdown): bridge `app.shutdown()` to also stop the ntex server — calling foxtive's shutdown now triggers graceful server stop
+* feat(shutdown): `ShutdownSignal` is auto-registered in `AppState` under key `"shutdown_signal"`
+* feat(example): add `programmatic_shutdown` example demonstrating both `ShutdownSignal` and `app.shutdown()` approaches
+* test: add unit tests for `ShutdownSignal` (trigger, idempotent, concurrent, receiver-dropped)
+* test: add unit tests for the `app.shutdown()` bridge pattern
+
 ### 1.0.0
 
 * **BREAKING**: moved from global state to dependency injection — `ServerBuilder` now takes `Arc<App>` instead of `FoxtiveSetup`
