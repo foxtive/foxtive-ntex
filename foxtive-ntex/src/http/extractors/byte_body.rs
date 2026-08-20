@@ -1,6 +1,6 @@
-use foxtive::enums::AppMessage;
 use crate::error::HttpError;
 use crate::http::server::BodyConfig;
+use foxtive::enums::AppMessage;
 use foxtive::results::AppResult;
 use ntex::http::Payload;
 use ntex::util::BytesMut;
@@ -44,8 +44,7 @@ impl ByteBody {
 
     /// Tries to interpret the bytes as a UTF-8 string.
     pub fn as_utf8(&self) -> AppResult<&str> {
-        std::str::from_utf8(&self.bytes)
-            .map_err(|e| AppMessage::invalid(e.to_string()))
+        std::str::from_utf8(&self.bytes).map_err(|e| AppMessage::invalid(e.to_string()))
     }
 }
 

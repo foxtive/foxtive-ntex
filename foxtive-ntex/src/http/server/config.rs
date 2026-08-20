@@ -1,9 +1,9 @@
+use crate::http::Method;
 use crate::http::kernel::Route;
 use crate::http::shutdown::{ShutdownConfig, ShutdownRegistry};
-use crate::http::Method;
+use foxtive::App;
 use foxtive::prelude::AppResult;
 use foxtive::setup::trace::Tracing;
-use foxtive::App;
 use ntex::http::header;
 use ntex::time::Seconds;
 use ntex::web::ServiceConfig;
@@ -345,7 +345,10 @@ impl ServerBuilder {
     /// Set the route factory function.
     ///
     /// This function is called once per worker to create route definitions.
-    pub fn route_factory<F: Fn() -> Vec<Route> + Send + Sync + 'static>(mut self, factory: F) -> Self {
+    pub fn route_factory<F: Fn() -> Vec<Route> + Send + Sync + 'static>(
+        mut self,
+        factory: F,
+    ) -> Self {
         self.route_factory = Arc::new(factory);
         self
     }
@@ -357,7 +360,7 @@ impl ServerBuilder {
         self.route_factory = factory;
         self
     }
-    
+
     /// Configure routes using ntex's native [`ServiceConfig`] API directly.
     ///
     /// This is a **complete replacement** for [`route_factory`](Self::route_factory).
@@ -390,7 +393,7 @@ impl ServerBuilder {
         self.configure_fn = Some(Arc::new(f));
         self
     }
-    
+
     /// Register an additional raw ntex configure callback.
     ///
     /// Unlike [`configure`](Self::configure), this is **additive** — callbacks
@@ -434,10 +437,7 @@ impl ServerBuilder {
         self
     }
 
-    pub fn custom_state_builder(
-        mut self,
-        builder: CustomStateBuilderFn,
-    ) -> Self {
+    pub fn custom_state_builder(mut self, builder: CustomStateBuilderFn) -> Self {
         self.custom_state_builder = Some(builder);
         self
     }
@@ -647,7 +647,7 @@ mod tests {
             .json_limit(1024 * 1024)
             .string_limit(512 * 1024)
             .byte_limit(2 * 1024 * 1024);
-        
+
         assert_eq!(config.json_limit, 1_048_576);
         assert_eq!(config.string_limit, 524_288);
         assert_eq!(config.byte_limit, 2_097_152);

@@ -26,7 +26,9 @@ pub enum MultipartError {
     NtexError(NtexMultipartError),
     #[error("Validation error: {}", .0.error)]
     ValidationError(InputError),
-    #[error("File '{filename}' in field '{field}' is too large: {size} bytes (max: {max_size} bytes)")]
+    #[error(
+        "File '{filename}' in field '{field}' is too large: {size} bytes (max: {max_size} bytes)"
+    )]
     FileTooLarge {
         field: String,
         filename: String,
@@ -142,14 +144,23 @@ impl WebResponseError for MultipartError {
             MultipartError::ValidationError(err) => {
                 send_response(self.status_code(), &err.error.to_string())
             }
-            MultipartError::FileTooLarge { field, filename, size, max_size } => {
+            MultipartError::FileTooLarge {
+                field,
+                filename,
+                size,
+                max_size,
+            } => {
                 let message = format!(
                     "File '{}' in field '{}' exceeds maximum size limit ({} > {} bytes)",
                     filename, field, size, max_size
                 );
                 send_response(self.status_code(), &message)
             }
-            MultipartError::PayloadTooLarge { field, size, max_size } => {
+            MultipartError::PayloadTooLarge {
+                field,
+                size,
+                max_size,
+            } => {
                 let message = format!(
                     "Request payload for field '{}' exceeds maximum size limit ({} > {} bytes)",
                     field, size, max_size

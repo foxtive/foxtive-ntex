@@ -4,8 +4,8 @@
 //! this handler is registered at the configured path and returns the aggregated
 //! health report from the foxtive [`App`](foxtive::App).
 
-use foxtive::health::{HealthReport, HealthStatus};
 use foxtive::App;
+use foxtive::health::{HealthReport, HealthStatus};
 use ntex::web::{HttpRequest, HttpResponse};
 use std::sync::Arc;
 

@@ -49,20 +49,16 @@ pub trait RequestExt {
 impl RequestExt for HttpRequest {
     fn app(&self) -> AppResult<Arc<App>> {
         use crate::ext::app_state::app_from_req;
-        app_from_req(self)
-            .cloned()
-            .ok_or_else(|| AppMessage::internal_server_error(
-                "Arc<App> not registered as ntex app data",
-            ))
+        app_from_req(self).cloned().ok_or_else(|| {
+            AppMessage::internal_server_error("Arc<App> not registered as ntex app data")
+        })
     }
 
     fn tokio(&self) -> AppResult<&Tokio> {
         use crate::ext::app_state::app_from_req;
-        app_from_req(self)
-            .map(|app| app.tokio())
-            .ok_or_else(|| AppMessage::internal_server_error(
-                "Arc<App> not registered as ntex app data",
-            ))
+        app_from_req(self).map(|app| app.tokio()).ok_or_else(|| {
+            AppMessage::internal_server_error("Arc<App> not registered as ntex app data")
+        })
     }
 
     fn service<T: Send + Sync + 'static>(&self) -> AppResult<Arc<T>> {
@@ -73,9 +69,9 @@ impl RequestExt for HttpRequest {
     fn db_pool(&self) -> foxtive::prelude::AppResult<&foxtive::database::DBPool> {
         use crate::ext::app_state::app_from_req;
         app_from_req(self)
-            .ok_or_else(|| AppMessage::internal_server_error(
-                "Arc<App> not registered as ntex app data",
-            ))?
+            .ok_or_else(|| {
+                AppMessage::internal_server_error("Arc<App> not registered as ntex app data")
+            })?
             .db()
     }
 

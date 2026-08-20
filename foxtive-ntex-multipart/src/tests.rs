@@ -584,7 +584,6 @@ pub(crate) mod test {
 
         let is_priority: bool = multipart_instance.post("is_priority").unwrap();
         assert!(is_priority);
-
     }
 
     #[cfg(feature = "uuid")]
@@ -608,7 +607,6 @@ pub(crate) mod test {
         multipart_instance.add_test_data("invalid_uuid", "not-a-valid-uuid");
         let result: Result<uuid::Uuid, _> = multipart_instance.post("invalid_uuid");
         assert!(result.is_err());
-
     }
 
     #[cfg(feature = "uuid")]
@@ -639,7 +637,6 @@ pub(crate) mod test {
         let default_uuid = uuid::Uuid::new_v4();
         let result_uuid = multipart_instance.post_or("missing_uuid", default_uuid);
         assert_eq!(result_uuid, default_uuid);
-
     }
 
     // Test 16: Disk streaming - save OnDisk file
@@ -653,7 +650,9 @@ pub(crate) mod test {
         let dest_file = temp_dir.join("test_ondisk_dest.txt");
 
         // Write test content to temp file
-        tokio::fs::write(&temp_file, "Disk stored content").await.unwrap();
+        tokio::fs::write(&temp_file, "Disk stored content")
+            .await
+            .unwrap();
 
         // Create FileInput with OnDisk storage mode
         let file_input = FileInput {
@@ -690,7 +689,9 @@ pub(crate) mod test {
         let temp_file = temp_dir.join("test_read_ondisk.txt");
 
         // Write test content
-        tokio::fs::write(&temp_file, "Test bytes content").await.unwrap();
+        tokio::fs::write(&temp_file, "Test bytes content")
+            .await
+            .unwrap();
 
         let file_input = FileInput {
             field_name: "file".to_string(),
@@ -731,8 +732,8 @@ pub(crate) mod test {
     async fn test_path_traversal_prevention() {
         use crate::content_disposition::ContentDisposition;
         use ntex::http::header::{HeaderName, HeaderValue};
-        use std::str::FromStr;
         use std::collections::HashMap;
+        use std::str::FromStr;
 
         let mut headers = ntex::http::HeaderMap::new();
         headers.insert(
@@ -756,7 +757,11 @@ pub(crate) mod test {
         if let crate::multipart::FileStorageMode::OnDisk(path) = &file_input.storage_mode {
             let path_str = path.to_string_lossy();
             // The sanitized filename should not contain path separators
-            assert!(!path_str.contains(".."), "Path traversal not prevented: {}", path_str);
+            assert!(
+                !path_str.contains(".."),
+                "Path traversal not prevented: {}",
+                path_str
+            );
         } else {
             panic!("Expected OnDisk storage mode");
         }

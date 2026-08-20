@@ -3,8 +3,8 @@ use crate::enums::ResponseCode;
 use crate::error::HttpError;
 use crate::http::response::ext::{ResponderExt, ResultResponseExt};
 use crate::http::{HttpResult, IntoAppResult};
-use foxtive::prelude::{AppMessage, AppResult};
 use foxtive::internal_server_error;
+use foxtive::prelude::{AppMessage, AppResult};
 use ntex::http::error::BlockingError;
 use ntex::web::HttpResponse;
 use serde::Serialize;
@@ -42,11 +42,7 @@ where
     T: Serialize + Sized,
 {
     fn respond_code<C: ResponseCodeContract>(self, msg: &str, code: C) -> HttpResult {
-        <AppResult<T> as ResultResponseExt>::send_result_msg(
-            self.into_app_result(),
-            code,
-            msg,
-        )
+        <AppResult<T> as ResultResponseExt>::send_result_msg(self.into_app_result(), code, msg)
     }
 
     fn respond_msg(self, msg: &str) -> HttpResult {
@@ -58,10 +54,7 @@ where
     }
 
     fn respond(self) -> HttpResult {
-        <AppResult<T> as ResultResponseExt>::send_result(
-            self.into_app_result(),
-            ResponseCode::Ok,
-        )
+        <AppResult<T> as ResultResponseExt>::send_result(self.into_app_result(), ResponseCode::Ok)
     }
 
     fn respond_undecorated(self) -> HttpResult {

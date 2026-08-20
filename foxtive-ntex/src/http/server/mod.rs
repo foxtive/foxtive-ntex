@@ -1,18 +1,18 @@
 mod config;
 
+#[allow(deprecated)]
+pub use config::JsonConfig;
 #[cfg(feature = "static")]
 pub use config::StaticFileConfig;
 pub use config::{BodyConfig, ServerBuilder};
-#[allow(deprecated)]
-pub use config::JsonConfig;
 
 use crate::http::kernel::{ntex_default_service, register_routes, setup_cors, setup_logger};
 use crate::http::shutdown::ShutdownSignal;
 use crate::setup::{CustomStateBuilder, NtexSetup, build_app_state};
+use foxtive::App;
 use foxtive::prelude::{AppMessage, AppResult};
 use foxtive::setup::load_environment_variables;
 use foxtive::setup::trace::Tracing;
-use foxtive::App;
 use ntex::io::IoConfig;
 use ntex::{SharedCfg, web};
 use std::future::Future;
@@ -49,9 +49,7 @@ where
 
     let user_custom_state_builder = builder.custom_state_builder;
     let custom_state_builder: Option<CustomStateBuilder> = Some(Box::new(move || {
-        let mut state = user_custom_state_builder
-            .map(|b| b())
-            .unwrap_or_default();
+        let mut state = user_custom_state_builder.map(|b| b()).unwrap_or_default();
         state.insert(
             "shutdown_signal".to_string(),
             Box::new(ShutdownSignal::new(shutdown_tx)),
@@ -193,7 +191,10 @@ where
     let mut registry = builder.shutdown_registry;
     if !registry.is_empty() {
         let timeout = builder.shutdown_config.map(|c| c.timeout);
-        debug!("Running {} shutdown services via ShutdownRegistry", registry.len());
+        debug!(
+            "Running {} shutdown services via ShutdownRegistry",
+            registry.len()
+        );
         registry.shutdown_all(timeout).await;
     }
 

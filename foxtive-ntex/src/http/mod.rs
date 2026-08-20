@@ -12,14 +12,14 @@ pub mod server;
 pub mod shutdown;
 
 use crate::enums::ResponseCode;
-pub use extractors::{ByteBody, ClientInfo, JsonBody, StringBody};
 #[cfg(feature = "jwt")]
 pub use extractors::JwtAuthToken;
+pub use extractors::{ByteBody, ClientInfo, JsonBody, StringBody};
 pub use ntex::http::Method;
 use ntex::web::ServiceConfig;
 pub use ntex_cors::Cors;
-pub use server::BodyConfig;
 use responder::Responder;
+pub use server::BodyConfig;
 
 pub use crate::error::HttpError;
 

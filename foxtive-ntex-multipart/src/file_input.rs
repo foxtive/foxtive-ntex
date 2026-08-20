@@ -30,13 +30,19 @@ impl Drop for TempFileGuard {
             handle.spawn_blocking(move || {
                 if let Err(e) = std::fs::remove_file(&path) {
                     // Log error but don't panic in drop
-                    eprintln!("Warning: Failed to clean up temporary file {:?}: {}", path, e);
+                    eprintln!(
+                        "Warning: Failed to clean up temporary file {:?}: {}",
+                        path, e
+                    );
                 }
             });
         } else {
             // Fallback to synchronous removal if no runtime available
             if let Err(e) = std::fs::remove_file(&self.path) {
-                eprintln!("Warning: Failed to clean up temporary file {:?}: {}", self.path, e);
+                eprintln!(
+                    "Warning: Failed to clean up temporary file {:?}: {}",
+                    self.path, e
+                );
             }
         }
     }
@@ -106,32 +112,32 @@ impl FileInput {
         temp_dir: &Path,
     ) -> MultipartResult<Self> {
         let mut file_input = Self::create(headers, cd)?;
-        
+
         // Generate unique temporary file path using timestamp and random number
         use std::time::{SystemTime, UNIX_EPOCH};
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
-        
+
         // Use a simple counter-based approach for uniqueness within the same process
         static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let counter = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        
+
         // Sanitize filename to prevent path traversal attacks
         let safe_filename = std::path::Path::new(&file_input.file_name)
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("upload");
-        
+
         let temp_path = temp_dir.join(format!(
             "multipart_{}_{}_{}",
             timestamp, counter, safe_filename
         ));
-        
+
         file_input.storage_mode = FileStorageMode::OnDisk(temp_path.clone());
         file_input.temp_guard = Some(std::sync::Arc::new(TempFileGuard::new(temp_path)));
-        
+
         Ok(file_input)
     }
 
@@ -173,14 +179,12 @@ impl FileInput {
             }
             FileStorageMode::OnDisk(path) => {
                 // Read from disk
-                tokio::fs::read(path)
-                    .await
-                    .map_err(|e| {
-                        MultipartError::IoError(std::io::Error::other(format!(
-                            "Failed to read file from disk: {}",
-                            e
-                        )))
-                    })
+                tokio::fs::read(path).await.map_err(|e| {
+                    MultipartError::IoError(std::io::Error::other(format!(
+                        "Failed to read file from disk: {}",
+                        e
+                    )))
+                })
             }
         }
     }

@@ -3,16 +3,16 @@
 //! Run: cargo run --example custom_state
 //! Test: curl http://localhost:3002/
 
-use foxtive::prelude::*;
 use foxtive::App;
 use foxtive::Environment;
+use foxtive::prelude::*;
+use foxtive_ntex::ServerBuilder;
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, Method};
-use foxtive_ntex::ServerBuilder;
 use ntex::web::get;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]

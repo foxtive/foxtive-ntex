@@ -82,8 +82,9 @@ mod tests {
 
     #[test]
     fn test_app_message_result_blocking_error_respond() {
-        let msg: Result<AppMessage, BlockingError<AppMessage>> =
-            Err(BlockingError::Error(AppMessage::internal_server_error("Error")));
+        let msg: Result<AppMessage, BlockingError<AppMessage>> = Err(BlockingError::Error(
+            AppMessage::internal_server_error("Error"),
+        ));
         let result = msg.respond();
         assert!(result.is_err());
     }

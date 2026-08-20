@@ -3,13 +3,13 @@
 //! Run: cargo run --example rest_api_server
 //! Test: curl http://localhost:3000/
 
-use foxtive::prelude::*;
 use foxtive::Environment;
+use foxtive::prelude::*;
+use foxtive_ntex::ServerBuilder;
 use foxtive_ntex::app_state_ext;
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, Method};
-use foxtive_ntex::ServerBuilder;
-use ntex::web::{self, get, HttpRequest};
+use ntex::web::{self, HttpRequest, get};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -116,9 +116,7 @@ async fn main() -> AppResult<()> {
         .raw_configure(|cfg| {
             cfg.service(
                 web::resource("/api/ping").route(
-                    web::get().to(|| async {
-                        serde_json::json!({"msg": "pong"}).respond()
-                    })
+                    web::get().to(|| async { serde_json::json!({"msg": "pong"}).respond() }),
                 ),
             );
         })
@@ -134,7 +132,6 @@ async fn main() -> AppResult<()> {
 
     Ok(())
 }
-
 
 #[get("/")]
 async fn root_handler(_req: HttpRequest) -> HttpResult {

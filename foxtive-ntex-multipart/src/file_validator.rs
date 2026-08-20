@@ -45,9 +45,9 @@ pub struct FileRules {
     pub allowed_extensions: Option<Vec<String>>,
 
     /// Allowed content types (should be lowercase for consistent matching)
-    /// 
+    ///
     /// # Security Note
-    /// 
+    ///
     /// Content-Type validation relies on the client-provided header, which can be
     /// easily spoofed. For production systems handling sensitive file uploads, consider
     /// implementing additional validation such as:
@@ -181,7 +181,10 @@ impl Validator {
             if let Some(extension) = &file.extension {
                 // Normalize both sides to lowercase for consistent comparison
                 let ext_lower = extension.to_lowercase();
-                if !allowed_extensions.iter().any(|e| e.to_lowercase() == ext_lower) {
+                if !allowed_extensions
+                    .iter()
+                    .any(|e| e.to_lowercase() == ext_lower)
+                {
                     return Err(InputError {
                         name: field_name.to_string(),
                         error: ErrorMessage::InvalidFileExtension(

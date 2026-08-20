@@ -20,7 +20,7 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Duration;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 /// A service that needs to perform cleanup during shutdown
 pub struct ShutdownService {
@@ -61,7 +61,7 @@ impl ShutdownRegistry {
             default_timeout: Duration::from_secs(10), // 10 seconds per service
         }
     }
-    
+
     /// Create a new shutdown registry with custom default timeout
     pub fn with_timeout(timeout_secs: u64) -> Self {
         Self {
@@ -69,7 +69,7 @@ impl ShutdownRegistry {
             default_timeout: Duration::from_secs(timeout_secs),
         }
     }
-    
+
     /// Register a service for shutdown cleanup
     ///
     /// # Arguments
@@ -91,19 +91,20 @@ impl ShutdownRegistry {
         F: FnOnce() -> Fut + Send + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.services.push(ShutdownService::new(name, priority, cleanup));
+        self.services
+            .push(ShutdownService::new(name, priority, cleanup));
     }
-    
+
     /// Get the number of registered services
     pub fn len(&self) -> usize {
         self.services.len()
     }
-    
+
     /// Check if there are no registered services
     pub fn is_empty(&self) -> bool {
         self.services.is_empty()
     }
-    
+
     /// Execute shutdown for all registered services
     ///
     /// Services are shut down in priority order (lowest number first).
@@ -131,21 +132,21 @@ impl ShutdownRegistry {
             info!("No services to shut down");
             return;
         }
-        
+
         // Sort by priority (lowest first)
         self.services.sort_by_key(|s| s.priority);
-        
+
         let service_timeout = timeout.unwrap_or(self.default_timeout);
         let total_services = self.services.len();
-        
+
         info!(
             "Starting graceful shutdown of {} services (timeout: {:?} per service)",
             total_services, service_timeout
         );
-        
+
         // Take ownership of all services
         let services = std::mem::take(&mut self.services);
-        
+
         for (index, service) in services.into_iter().enumerate() {
             info!(
                 "[{}/{}] Shutting down '{}' (priority: {})...",
@@ -154,25 +155,32 @@ impl ShutdownRegistry {
                 service.name,
                 service.priority
             );
-            
+
             let start = tokio::time::Instant::now();
-            
+
             // Execute cleanup with timeout
             let cleanup_future = (service.cleanup)();
-            
+
             match tokio::time::timeout(service_timeout, cleanup_future).await {
                 Ok(_) => {
                     let elapsed = start.elapsed();
                     info!(
                         "[{}/{}] Service '{}' shut down successfully in {:?}",
-                        index + 1, total_services, service.name, elapsed
+                        index + 1,
+                        total_services,
+                        service.name,
+                        elapsed
                     );
                 }
                 Err(_) => {
                     let elapsed = start.elapsed();
                     error!(
                         "[{}/{}] Service '{}' shutdown timed out after {:?} (limit: {:?})",
-                        index + 1, total_services, service.name, elapsed, service_timeout
+                        index + 1,
+                        total_services,
+                        service.name,
+                        elapsed,
+                        service_timeout
                     );
                     warn!(
                         "Service '{}' may not have cleaned up properly. Continuing with shutdown...",
@@ -181,7 +189,7 @@ impl ShutdownRegistry {
                 }
             }
         }
-        
+
         info!("All services shut down completed");
     }
 }
@@ -239,10 +247,10 @@ impl ShutdownSignal {
 pub struct ShutdownConfig {
     /// Total shutdown timeout
     pub timeout: Duration,
-    
+
     /// Per-service timeout
     pub service_timeout: Duration,
-    
+
     /// Whether to force kill after timeout
     pub force_kill: bool,
 }
@@ -262,7 +270,7 @@ impl ShutdownConfig {
             force_kill: true,
         }
     }
-    
+
     /// Create a new shutdown configuration with explicit timeouts
     pub fn with_timeouts(total_timeout_secs: u64, service_timeout_secs: u64) -> Self {
         Self {
@@ -271,7 +279,7 @@ impl ShutdownConfig {
             force_kill: true,
         }
     }
-    
+
     /// Set whether to force kill after timeout
     pub fn force_kill(mut self, force: bool) -> Self {
         self.force_kill = force;
@@ -353,7 +361,10 @@ mod tests {
         registry.shutdown_all(None).await;
 
         let final_order = order.lock().await;
-        assert_eq!(*final_order, vec!["high_priority", "medium_priority", "low_priority"]);
+        assert_eq!(
+            *final_order,
+            vec!["high_priority", "medium_priority", "low_priority"]
+        );
     }
 
     #[tokio::test]
@@ -490,11 +501,7 @@ mod tests {
 
         shutting_down.store(true, Ordering::SeqCst);
 
-        let result = tokio::time::timeout(
-            Duration::from_millis(100),
-            bridge_rx,
-        )
-        .await;
+        let result = tokio::time::timeout(Duration::from_millis(100), bridge_rx).await;
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_ok());

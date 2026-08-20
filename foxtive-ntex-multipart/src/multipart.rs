@@ -30,7 +30,7 @@ pub struct MultipartConfig {
 impl Default for MultipartConfig {
     fn default() -> Self {
         Self {
-            max_file_size: Some(10 * 1024 * 1024), // 10 MB
+            max_file_size: Some(10 * 1024 * 1024),          // 10 MB
             max_total_payload_size: Some(50 * 1024 * 1024), // 50 MB
             temp_dir: None,
             disk_threshold: None,
@@ -208,7 +208,7 @@ impl Multipart {
 
                         // Track payload size for data fields
                         self.total_payload_size += value.len();
-                        
+
                         // Check total payload limit
                         if let Some(max_total) = self.config.max_total_payload_size
                             && self.total_payload_size > max_total
@@ -238,7 +238,11 @@ impl Multipart {
                     let mut info = if self.config.temp_dir.is_some() {
                         // Create FileInput for disk streaming
                         if let Some(temp_dir) = &self.config.temp_dir {
-                            FileInput::create_with_disk(field.headers(), content_disposition, temp_dir)?
+                            FileInput::create_with_disk(
+                                field.headers(),
+                                content_disposition,
+                                temp_dir,
+                            )?
                         } else {
                             // Fallback to in-memory if no temp_dir configured
                             FileInput::create(field.headers(), content_disposition)?
@@ -247,7 +251,7 @@ impl Multipart {
                         // Create FileInput for in-memory storage
                         FileInput::create(field.headers(), content_disposition)?
                     };
-                    
+
                     let mut total_size = 0;
 
                     // Handle disk streaming
@@ -262,17 +266,19 @@ impl Multipart {
                                 )));
                             }
                         };
-                        
+
                         // Create buffered writer for efficient I/O
                         let file = File::create(&temp_path).await?;
                         let mut writer = tokio::io::BufWriter::with_capacity(8192, file);
-                        
+
                         // Stream chunks directly to disk
                         while let Some(chunk) = field.next().await {
-                            let data = chunk.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
+                            let data = chunk.map_err(|e| {
+                                MultipartError::NtexError(NtexMultipartError::from(e))
+                            })?;
                             let chunk_size = data.len();
                             total_size += chunk_size;
-                            
+
                             // Check per-file size limit during collection
                             if let Some(max_file_size) = self.config.max_file_size
                                 && total_size > max_file_size
@@ -287,7 +293,7 @@ impl Multipart {
                                     max_size: max_file_size,
                                 });
                             }
-                            
+
                             // Check total payload size limit
                             self.total_payload_size += chunk_size;
                             if let Some(max_total) = self.config.max_total_payload_size
@@ -301,27 +307,29 @@ impl Multipart {
                                     max_size: max_total,
                                 });
                             }
-                            
+
                             // Write chunk to disk
                             writer.write_all(&data).await?;
                         }
-                        
+
                         // Flush and ensure all data is written
                         writer.flush().await?;
                         drop(writer);
-                        
+
                         info.size = total_size;
                         // bytes vector remains empty for disk-stored files
                     } else {
                         // In-memory collection (original behavior)
                         let mut bytes = Vec::new();
-                        
+
                         // Collect all file chunks with size limit enforcement
                         while let Some(chunk) = field.next().await {
-                            let data = chunk.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
+                            let data = chunk.map_err(|e| {
+                                MultipartError::NtexError(NtexMultipartError::from(e))
+                            })?;
                             let chunk_size = data.len();
                             total_size += chunk_size;
-                            
+
                             // Check per-file size limit during collection
                             if let Some(max_file_size) = self.config.max_file_size
                                 && total_size > max_file_size
@@ -333,7 +341,7 @@ impl Multipart {
                                     max_size: max_file_size,
                                 });
                             }
-                            
+
                             // Check total payload size limit
                             self.total_payload_size += chunk_size;
                             if let Some(max_total) = self.config.max_total_payload_size
@@ -345,7 +353,7 @@ impl Multipart {
                                     max_size: max_total,
                                 });
                             }
-                            
+
                             bytes.push(data);
                         }
 
@@ -371,13 +379,11 @@ impl Multipart {
     ) -> MultipartResult<String> {
         let mut value = String::new();
         while let Some(chunk) = field.next().await {
-            let chunk_data = chunk.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
+            let chunk_data =
+                chunk.map_err(|e| MultipartError::NtexError(NtexMultipartError::from(e)))?;
             // Return error for invalid UTF-8 instead of silently replacing
             let chunk_str = std::str::from_utf8(&chunk_data).map_err(|e| {
-                MultipartError::ParseError(format!(
-                    "Invalid UTF-8 in form field data: {}",
-                    e
-                ))
+                MultipartError::ParseError(format!("Invalid UTF-8 in form field data: {}", e))
             })?;
             value.push_str(chunk_str);
         }

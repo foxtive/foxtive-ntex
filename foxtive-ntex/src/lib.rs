@@ -6,6 +6,6 @@ pub mod helpers;
 pub mod http;
 pub mod setup;
 
-pub use setup::state::AppState;
-pub use http::shutdown::{ShutdownConfig, ShutdownRegistry, ShutdownSignal};
 pub use http::server::ServerBuilder;
+pub use http::shutdown::{ShutdownConfig, ShutdownRegistry, ShutdownSignal};
+pub use setup::state::AppState;

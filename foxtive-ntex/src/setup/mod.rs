@@ -6,7 +6,8 @@ use std::collections::HashMap;
 pub mod state;
 
 /// Custom state builder function type
-pub(crate) type CustomStateBuilder = Box<dyn FnOnce() -> HashMap<String, Box<dyn Any + Send + Sync>> + Send>;
+pub(crate) type CustomStateBuilder =
+    Box<dyn FnOnce() -> HashMap<String, Box<dyn Any + Send + Sync>> + Send>;
 
 /// Internal structure used during server bootstrapping
 pub struct NtexSetup {

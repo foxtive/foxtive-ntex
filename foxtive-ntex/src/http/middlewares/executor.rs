@@ -1,7 +1,7 @@
 use crate::http::middlewares::{Middleware, MiddlewareFlow};
 use crate::http::response::error::ResponseError;
-use foxtive::metrics::InfraEvent;
 use foxtive::App;
+use foxtive::metrics::InfraEvent;
 use ntex::service::{Middleware as ServiceMiddleware, Service, ServiceCtx};
 use ntex::web;
 use ntex::web::{Error, WebRequest, WebResponse};

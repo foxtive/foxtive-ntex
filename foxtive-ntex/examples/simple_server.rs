@@ -1,10 +1,10 @@
-use foxtive::prelude::*;
 use foxtive::App;
 use foxtive::Environment;
+use foxtive::prelude::*;
+use foxtive_ntex::ServerBuilder;
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, JsonBody, Method};
-use foxtive_ntex::ServerBuilder;
-use ntex::web::{get, post, HttpRequest};
+use ntex::web::{HttpRequest, get, post};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

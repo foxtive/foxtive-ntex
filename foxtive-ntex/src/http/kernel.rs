@@ -20,7 +20,11 @@ pub struct Route {
     pub controllers: Vec<Controller>,
 }
 
-pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>, health_check_path: Option<&str>) {
+pub fn register_routes(
+    config: &mut ServiceConfig,
+    routes: Vec<Route>,
+    health_check_path: Option<&str>,
+) {
     tracing::debug!("discovering routes...");
 
     for route in routes {
@@ -36,7 +40,7 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>, health_ch
                 config.service(
                     scope
                         .middleware(MiddlewareChain::new(route.middlewares.clone()))
-                        .configure(controller.handler)
+                        .configure(controller.handler),
                 );
             } else {
                 config.service(scope.configure(controller.handler));
@@ -49,9 +53,8 @@ pub fn register_routes(config: &mut ServiceConfig, routes: Vec<Route>, health_ch
     // Register built-in health check endpoint if configured
     if let Some(path) = health_check_path {
         tracing::debug!("registering health check endpoint at: {}", path);
-        config.service(
-            web::resource(path).route(web::get().to(crate::http::health::health_handler))
-        );
+        config
+            .service(web::resource(path).route(web::get().to(crate::http::health::health_handler)));
     }
 }
 
@@ -63,7 +66,11 @@ pub fn setup_logger(exclude_paths: &[String]) -> Logger {
     logger
 }
 
-pub fn setup_cors(origins: Vec<String>, methods: Vec<Method>, extra_headers: &[header::HeaderName]) -> Cors {
+pub fn setup_cors(
+    origins: Vec<String>,
+    methods: Vec<Method>,
+    extra_headers: &[header::HeaderName],
+) -> Cors {
     let mut cors = Cors::new();
 
     // Handle wildcard separately from specific origins
@@ -109,6 +116,9 @@ pub fn ntex_default_service() -> NtexRoute {
 
 impl Controller {
     pub fn new(path: impl Into<String>, handler: fn(cfg: &mut ServiceConfig)) -> Self {
-        Controller { path: path.into(), handler }
+        Controller {
+            path: path.into(),
+            handler,
+        }
     }
 }

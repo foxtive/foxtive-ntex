@@ -60,7 +60,9 @@ impl AppState {
         self.custom_state.is_empty()
     }
 
-    pub fn iter_custom_state(&self) -> impl Iterator<Item = (&String, &Box<dyn Any + Send + Sync>)> {
+    pub fn iter_custom_state(
+        &self,
+    ) -> impl Iterator<Item = (&String, &Box<dyn Any + Send + Sync>)> {
         self.custom_state.iter()
     }
 }
