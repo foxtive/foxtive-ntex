@@ -6,13 +6,13 @@
 //!   curl http://localhost:3000/stop       (via ShutdownSignal)
 //!   curl http://localhost:3000/app-stop   (via app.shutdown())
 
+use foxtive::prelude::*;
 use foxtive::App;
 use foxtive::Environment;
-use foxtive::prelude::*;
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, Method};
 use foxtive_ntex::{AppState, ServerBuilder, ShutdownSignal};
-use ntex::web::{self, HttpRequest, get};
+use ntex::web::{self, get, HttpRequest};
 use std::sync::Arc;
 
 #[ntex::main]
@@ -67,10 +67,10 @@ async fn index(_req: HttpRequest) -> HttpResult {
 async fn stop(state: web::types::State<AppState>) -> HttpResult {
     println!("[/stop] Shutdown requested via ShutdownSignal");
 
-    if let Some(signal) = state.get::<ShutdownSignal>("shutdown_signal") {
-        if signal.trigger().await {
-            println!("[/stop] Signal sent");
-        }
+    if let Some(signal) = state.get::<ShutdownSignal>("shutdown_signal")
+        && signal.trigger().await
+    {
+        println!("[/stop] Signal sent");
     }
 
     serde_json::json!({

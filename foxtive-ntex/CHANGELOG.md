@@ -2,6 +2,10 @@
 
 ------
 
+### 1.2.0
+
+* bump(crates): to their latest min versions
+
 ### 1.1.0
 
 * feat(shutdown): add `ShutdownSignal` for programmatic server shutdown (ntex mpsc pattern)
