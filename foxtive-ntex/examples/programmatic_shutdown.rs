@@ -6,13 +6,13 @@
 //!   curl http://localhost:3000/stop       (via ShutdownSignal)
 //!   curl http://localhost:3000/app-stop   (via app.shutdown())
 
-use foxtive::prelude::*;
 use foxtive::App;
 use foxtive::Environment;
+use foxtive::prelude::*;
 use foxtive_ntex::http::response::ext::StructResponseExt;
 use foxtive_ntex::http::{HttpResult, Method};
 use foxtive_ntex::{AppState, ServerBuilder, ShutdownSignal};
-use ntex::web::{self, get, HttpRequest};
+use ntex::web::{self, HttpRequest, get};
 use std::sync::Arc;
 
 #[ntex::main]
